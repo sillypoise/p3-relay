@@ -47,6 +47,24 @@ intermittently unresponsive Docker Hub registry addresses rather than the build 
 - Added deterministic success, temporary-failure, and permanent-failure receiver scenarios.
 
 Validation: `just check` passed. Migration application and repeat execution passed against an
-isolated PostgreSQL 17 cluster. A signed event was accepted, claimed, delivered to the simulator with
-HTTP 204, and recorded as `delivered` with one durable attempt. Invalid receipt, authorization,
-network-address, response-class, exhaustion, and state-transition paths are covered by tests.
+isolated PostgreSQL 17 cluster. A signed event was accepted, claimed, and delivered to the simulator
+with HTTP 204. It was recorded as `delivered` with one durable attempt. Invalid receipt,
+authorization, network-address, response-class, exhaustion, and state-transition paths are covered
+by tests.
+
+## Phase 4 — Operator dashboard
+
+- Added authenticated, source-scoped overview, event list, event detail, attempt history, and
+  endpoint configuration read APIs with bounded event results.
+- Added a React and TanStack dashboard with overview metrics, event navigation, attempt timelines,
+  dead-letter replay, and read-only endpoint configuration.
+- Added explicit authorization, loading, empty, invalid-filter, request-failure, and replay-failure
+  states.
+- Added a local operator-token entry boundary that retains the token only for the browser tab; no
+  operator credential is compiled into the frontend.
+- Added responsive navigation and data layouts for narrow and desktop viewports.
+
+Validation: `just check` passed, including authenticated and denied API paths, strict TypeScript,
+frontend authorization rendering, and the production frontend build. Automated browser screenshot
+comparison is not configured; final visual review at representative viewports remains a shipping
+check.

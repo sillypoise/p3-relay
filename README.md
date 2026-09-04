@@ -9,14 +9,15 @@ identify seeded traffic and simulated destinations explicitly.
 
 ## Project status
 
-Phase 3, the local backend vertical slice, is complete. Signed receipt, idempotent persistence,
-bounded delivery and retry processing, dead-letter replay, outbound address controls, and the
-simulated receiver are implemented and locally verified.
+Phase 4, the operator dashboard, is complete. Relay now exposes authenticated operational reads and
+responsive overview, event list, event detail, attempt timeline, replay, and endpoint configuration
+views. Public sandbox access remains for Phase 5.
 
 ## Documentation
 
 - [Product brief](docs/product-brief.md)
 - [Delivery contract](docs/delivery-contract.md)
+- [Dashboard contract](docs/dashboard-contract.md)
 - [Phase log](docs/phase-log.md)
 
 ## Planned stack

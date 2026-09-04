@@ -32,6 +32,18 @@ func (store *store_stub) Replay(_ context.Context, event_id string, _ string) er
 	return store.replay_error
 }
 
+func (store *store_stub) Overview(context.Context, string) (event.Overview, error) {
+	return event.Overview{}, nil
+}
+
+func (store *store_stub) List(context.Context, string, string, uint16) ([]event.Summary, error) {
+	return []event.Summary{}, nil
+}
+
+func (store *store_stub) Detail(context.Context, string, string) (event.Detail, error) {
+	return event.Detail{}, nil
+}
+
 func TestEventsPostAcceptsSignedEvent(t *testing.T) {
 	store := &store_stub{accepted: event.Accepted{ID: "5a9c38c7-e229-4dad-a702-b03780ba69a7"}}
 	handler := test_api(store)
@@ -100,6 +112,46 @@ func TestEventsPostMapsPersistenceFailures(t *testing.T) {
 		if strings.Contains(response.Body.String(), "database unavailable") {
 			t.Fatal("internal error leaked to response")
 		}
+	}
+}
+
+func TestDashboardReadsRequireAuthorization(t *testing.T) {
+	routes := []string{
+		"/v1/overview",
+		"/v1/events",
+		"/v1/events/5a9c38c7-e229-4dad-a702-b03780ba69a7",
+		"/v1/endpoint",
+	}
+	for _, route := range routes {
+		request := httptest.NewRequest(http.MethodGet, route, nil)
+		response := httptest.NewRecorder()
+		test_api(&store_stub{}).ServeHTTP(response, request)
+		if response.Code != http.StatusUnauthorized {
+			t.Fatalf("route %s status = %d, want %d", route, response.Code, http.StatusUnauthorized)
+		}
+	}
+}
+
+func TestDashboardReadsReturnBoundedResources(t *testing.T) {
+	routes := []string{"/v1/overview", "/v1/events", "/v1/endpoint"}
+	for _, route := range routes {
+		request := httptest.NewRequest(http.MethodGet, route, nil)
+		request.Header.Set("Authorization", "Bearer local-operator-token")
+		response := httptest.NewRecorder()
+		test_api(&store_stub{}).ServeHTTP(response, request)
+		if response.Code != http.StatusOK {
+			t.Fatalf("route %s status = %d, want %d", route, response.Code, http.StatusOK)
+		}
+	}
+}
+
+func TestEventsReadRejectsUnknownState(t *testing.T) {
+	request := httptest.NewRequest(http.MethodGet, "/v1/events?state=unknown", nil)
+	request.Header.Set("Authorization", "Bearer local-operator-token")
+	response := httptest.NewRecorder()
+	test_api(&store_stub{}).ServeHTTP(response, request)
+	if response.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d", response.Code, http.StatusBadRequest)
 	}
 }
 

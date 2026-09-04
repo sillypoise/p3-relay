@@ -60,7 +60,11 @@ func New(
 func (api *API) Handler() http.Handler {
 	handler := http.NewServeMux()
 	handler.HandleFunc("POST /v1/sources/{source_key}/events", api.events_post)
+	handler.HandleFunc("GET /v1/overview", api.overview_get)
+	handler.HandleFunc("GET /v1/events", api.events_get)
+	handler.HandleFunc("GET /v1/events/{event_id}", api.event_get)
 	handler.HandleFunc("POST /v1/events/{event_id}/replay", api.events_replay_post)
+	handler.HandleFunc("GET /v1/endpoint", api.endpoint_get)
 	return handler
 }
 
@@ -115,6 +119,67 @@ func (api *API) accept(response http.ResponseWriter, request *http.Request, exte
 	})
 }
 
+func (api *API) overview_get(response http.ResponseWriter, request *http.Request) {
+	if !api.require_authorization(response, request) {
+		return
+	}
+	overview, error_value := api.store.Overview(request.Context(), api.source_key)
+	if error_value != nil {
+		write_error(response, http.StatusServiceUnavailable, "read_unavailable", "Overview is unavailable.")
+		return
+	}
+	write_json(response, http.StatusOK, overview)
+}
+
+func (api *API) events_get(response http.ResponseWriter, request *http.Request) {
+	if !api.require_authorization(response, request) {
+		return
+	}
+	state := request.URL.Query().Get("state")
+	if state != "" && !valid_state(state) {
+		write_error(response, http.StatusBadRequest, "invalid_request", "Event state is invalid.")
+		return
+	}
+	events, error_value := api.store.List(request.Context(), api.source_key, state, 50)
+	if error_value != nil {
+		write_error(response, http.StatusServiceUnavailable, "read_unavailable", "Events are unavailable.")
+		return
+	}
+	write_json(response, http.StatusOK, map[string]any{"events": events})
+}
+
+func (api *API) event_get(response http.ResponseWriter, request *http.Request) {
+	if !api.require_authorization(response, request) {
+		return
+	}
+	event_id := request.PathValue("event_id")
+	if !identifier.ValidUUID(event_id) {
+		write_error(response, http.StatusBadRequest, "invalid_request", "Event identifier is invalid.")
+		return
+	}
+	detail, error_value := api.store.Detail(request.Context(), event_id, api.source_key)
+	if error_value == nil {
+		write_json(response, http.StatusOK, detail)
+		return
+	}
+	var not_found event.NotFoundError
+	if errors.As(error_value, &not_found) {
+		write_error(response, http.StatusNotFound, "event_not_found", "Event was not found.")
+		return
+	}
+	write_error(response, http.StatusServiceUnavailable, "read_unavailable", "Event is unavailable.")
+}
+
+func (api *API) endpoint_get(response http.ResponseWriter, request *http.Request) {
+	if !api.require_authorization(response, request) {
+		return
+	}
+	write_json(response, http.StatusOK, map[string]any{
+		"source_key": api.source_key, "destination_url": api.destination_url,
+		"enabled": true, "secrets": "write_only",
+	})
+}
+
 func (api *API) events_replay_post(response http.ResponseWriter, request *http.Request) {
 	if !api.authorized(request.Header.Get("Authorization")) {
 		write_error(response, http.StatusUnauthorized, "unauthorized", "Authorization is required.")
@@ -141,6 +206,14 @@ func (api *API) events_replay_post(response http.ResponseWriter, request *http.R
 		return
 	}
 	write_error(response, http.StatusServiceUnavailable, "replay_unavailable", "Replay is unavailable.")
+}
+
+func (api *API) require_authorization(response http.ResponseWriter, request *http.Request) bool {
+	if api.authorized(request.Header.Get("Authorization")) {
+		return true
+	}
+	write_error(response, http.StatusUnauthorized, "unauthorized", "Authorization is required.")
+	return false
 }
 
 func (api *API) authorized(value string) bool {
@@ -184,6 +257,16 @@ func read_body(response http.ResponseWriter, request *http.Request) ([]byte, boo
 		return nil, false
 	}
 	return body, true
+}
+
+func valid_state(value string) bool {
+	states := [...]string{"pending", "delivering", "delivered", "retry_scheduled", "dead_lettered"}
+	for _, state := range states {
+		if value == state {
+			return true
+		}
+	}
+	return false
 }
 
 func valid_event_id(value string) bool {
