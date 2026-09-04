@@ -11,7 +11,7 @@ func TestHealthGetReturnsReadyResponse(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, "/health", nil)
 	recorder := httptest.NewRecorder()
 
-	new_handler().ServeHTTP(recorder, request)
+	new_handler(http.NotFoundHandler()).ServeHTTP(recorder, request)
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusOK)
@@ -28,7 +28,7 @@ func TestHealthRejectsUnsupportedMethod(t *testing.T) {
 	request := httptest.NewRequest(http.MethodPost, "/health", nil)
 	recorder := httptest.NewRecorder()
 
-	new_handler().ServeHTTP(recorder, request)
+	new_handler(http.NotFoundHandler()).ServeHTTP(recorder, request)
 
 	if recorder.Code != http.StatusMethodNotAllowed {
 		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusMethodNotAllowed)
@@ -46,7 +46,7 @@ func TestUnknownRouteReturnsNotFound(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, "/unknown", nil)
 	recorder := httptest.NewRecorder()
 
-	new_handler().ServeHTTP(recorder, request)
+	new_handler(http.NotFoundHandler()).ServeHTTP(recorder, request)
 
 	if recorder.Code != http.StatusNotFound {
 		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusNotFound)

@@ -10,8 +10,8 @@ identify seeded traffic and simulated destinations explicitly.
 ## Project status
 
 Phase 3, the local backend vertical slice, is in progress. Its database schema, migration command,
-signature primitive, and delivery response policy are implemented; receipt and worker execution are
-not yet implemented.
+signed receipt endpoint, idempotent persistence, and delivery response policy are implemented;
+worker execution is not yet implemented.
 
 ## Documentation
 
