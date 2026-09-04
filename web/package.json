@@ -1,0 +1,38 @@
+{
+  "name": "@p3-relay/web",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "packageManager": "pnpm@10.33.2",
+  "engines": {
+    "node": ">=24.0.0 <25.0.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "format": "oxfmt --write src vite.config.ts vitest.config.ts",
+    "format-check": "oxfmt --check src vite.config.ts vitest.config.ts",
+    "lint": "oxlint --deny-warnings src vite.config.ts vitest.config.ts",
+    "typecheck": "tsc -b",
+    "test": "vitest run",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "7.0.1",
+    "@testing-library/react": "16.3.3",
+    "@types/node": "24.13.3",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.7",
+    "@vitejs/plugin-react": "6.1.1",
+    "jsdom": "30.0.1",
+    "oxfmt": "0.66.0",
+    "oxlint": "1.81.0",
+    "typescript": "6.0.3",
+    "vite": "8.2.2",
+    "vitest": "5.0.0"
+  }
+}

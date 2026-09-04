@@ -1,0 +1,31 @@
+# Environment and secrets.
+.env
+.env.*
+!.env.example
+
+# Go.
+/api
+/relay-api
+/coverage.out
+
+# Frontend.
+/web/node_modules/
+/web/dist/
+/web/*.local
+*.tsbuildinfo
+
+# OpenTofu.
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfvars
+!*.tfvars.example
+
+# Editors and operating systems.
+.idea/
+.vscode/
+.DS_Store
+
+# Logs.
+*.log
