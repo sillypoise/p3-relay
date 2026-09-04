@@ -63,6 +63,8 @@ by tests.
 - Added a local operator-token entry boundary that retains the token only for the browser tab; no
   operator credential is compiled into the frontend.
 - Added responsive navigation and data layouts for narrow and desktop viewports.
+- Corrected local service supervision to use bounded child processes instead of an unsupported
+  `just --parallel` option.
 
 Validation: `just check` passed, including authenticated and denied API paths, strict TypeScript,
 frontend authorization rendering, and the production frontend build. Automated browser screenshot

@@ -40,8 +40,10 @@ just database-start
 just develop
 ```
 
-`database-create` is a one-time local setup step. Common commands are discoverable with `just`.
-Run the complete non-mutating validation set with `just check`.
+`database-create` is a one-time local setup step. `just develop` supervises the API, worker,
+simulated receiver, and Vite frontend together. Open the dashboard at `http://127.0.0.1:4173`.
+Common commands are discoverable with `just`; run the complete non-mutating validation set with
+`just check`.
 
 Copy `.env.example` to `.env` only when local overrides are needed. The local values are development
 credentials and must not be reused in deployment.

@@ -24,7 +24,23 @@ web-develop:
     pnpm --dir web dev
 
 develop:
-    just --parallel api-develop worker-develop receiver-develop web-develop
+    #!/usr/bin/env bash
+    set -euo pipefail
+    processes=()
+    cleanup() {
+        trap - EXIT INT TERM
+        kill "${processes[@]}" 2>/dev/null || true
+        wait "${processes[@]}" 2>/dev/null || true
+    }
+    trap cleanup EXIT INT TERM
+    go build -o /tmp/p3-relay-api ./cmd/api
+    go build -o /tmp/p3-relay-worker ./cmd/worker
+    go build -o /tmp/p3-relay-receiver ./cmd/receiver
+    /tmp/p3-relay-api & processes+=("$!")
+    /tmp/p3-relay-worker & processes+=("$!")
+    /tmp/p3-relay-receiver & processes+=("$!")
+    (cd web && exec node_modules/.bin/vite) & processes+=("$!")
+    wait -n "${processes[@]}"
 
 format:
     gofmt -w cmd
