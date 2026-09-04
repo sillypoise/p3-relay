@@ -30,6 +30,6 @@ infrastructure, and command standards. No executable implementation exists in th
 - Recorded `p3_relay` as the mandatory schema for the shared Railway PostgreSQL instance.
 
 Validation: `just check` passed, including formatting, static analysis, strict type checking, Go
-race and boundary tests, frontend tests, and production builds. The OCI smoke build was attempted but
-could not be verified because Docker Hub timed out during the base-image pull. Re-check it when
-registry access is available.
+race and boundary tests, frontend tests, and production builds. The Podman OCI image built and its
+health endpoint passed a container smoke test. An initial base-image pull timeout was traced to
+intermittently unresponsive Docker Hub registry addresses rather than the build definition.
