@@ -32,12 +32,13 @@ func (store *Store) Claim(context_value context.Context, now time.Time, lease ti
 			lease_expires_at = $2, claim_id = $3
 		FROM candidate WHERE event.id = candidate.id
 		RETURNING event.id, event.body, event.destination_url,
-			event.attempt_count, event.created_at`
+			event.replay_count, event.attempt_count, event.created_at`
 	claimed := &delivery.ClaimedEvent{ClaimID: claim_id}
 	error_value = store.pool.QueryRow(context_value, query, now, now.Add(lease), claim_id).Scan(
 		&claimed.ID,
 		&claimed.Body,
 		&claimed.DestinationURL,
+		&claimed.ReplayNumber,
 		&claimed.AttemptNumber,
 		&claimed.CreatedAt,
 	)
@@ -75,11 +76,12 @@ func (store *Store) Record(context_value context.Context, claimed *delivery.Clai
 	}
 	_, error_value = transaction.Exec(context_value, `
 		INSERT INTO p3_relay.delivery_attempts (
-			id, event_id, attempt_number, started_at, finished_at, outcome,
+			id, event_id, replay_number, attempt_number, started_at, finished_at, outcome,
 			status_code, response_excerpt, error_code
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-		attempt.ID, claimed.ID, claimed.AttemptNumber, attempt.StartedAt, attempt.FinishedAt,
-		attempt.Outcome, attempt.StatusCode, attempt.ResponseExcerpt, attempt.ErrorCode)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+		attempt.ID, claimed.ID, claimed.ReplayNumber, claimed.AttemptNumber,
+		attempt.StartedAt, attempt.FinishedAt, attempt.Outcome,
+		attempt.StatusCode, attempt.ResponseExcerpt, attempt.ErrorCode)
 	if error_value != nil {
 		return fmt.Errorf("insert delivery attempt: %w", error_value)
 	}

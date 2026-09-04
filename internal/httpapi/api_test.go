@@ -17,12 +17,19 @@ import (
 type store_stub struct {
 	accepted event.Accepted
 	error    error
-	receipt  *event.Receipt
+	receipt      *event.Receipt
+	replay_error error
+	replayed_id  string
 }
 
 func (store *store_stub) Accept(_ context.Context, receipt *event.Receipt) (event.Accepted, error) {
 	store.receipt = receipt
 	return store.accepted, store.error
+}
+
+func (store *store_stub) Replay(_ context.Context, event_id string, _ string) error {
+	store.replayed_id = event_id
+	return store.replay_error
 }
 
 func TestEventsPostAcceptsSignedEvent(t *testing.T) {
@@ -96,8 +103,48 @@ func TestEventsPostMapsPersistenceFailures(t *testing.T) {
 	}
 }
 
+func TestEventsReplayRequiresAuthorizationAndDeadLetterState(t *testing.T) {
+	const event_id = "5a9c38c7-e229-4dad-a702-b03780ba69a7"
+	test_cases := []struct {
+		name        string
+		token       string
+		replay_error error
+		status      int
+	}{
+		{name: "missing authorization", status: http.StatusUnauthorized},
+		{name: "wrong authorization", token: "Bearer wrong-token-value", status: http.StatusUnauthorized},
+		{name: "not found", token: "Bearer local-operator-token", replay_error: event.NotFoundError{}, status: http.StatusNotFound},
+		{name: "invalid state", token: "Bearer local-operator-token", replay_error: event.InvalidStateError{}, status: http.StatusConflict},
+		{name: "accepted", token: "Bearer local-operator-token", status: http.StatusAccepted},
+	}
+	for _, test_case := range test_cases {
+		t.Run(test_case.name, func(t *testing.T) {
+			store := &store_stub{replay_error: test_case.replay_error}
+			request := httptest.NewRequest(http.MethodPost, "/v1/events/"+event_id+"/replay", nil)
+			request.Header.Set("Authorization", test_case.token)
+			response := httptest.NewRecorder()
+			test_api(store).ServeHTTP(response, request)
+			if response.Code != test_case.status {
+				t.Fatalf("status = %d, want %d", response.Code, test_case.status)
+			}
+			if test_case.status == http.StatusAccepted && store.replayed_id != event_id {
+				t.Fatal("authorized replay did not reach persistence")
+			}
+			if test_case.status == http.StatusUnauthorized && store.replayed_id != "" {
+				t.Fatal("unauthorized replay reached persistence")
+			}
+		})
+	}
+}
+
 func test_api(store event.Store) http.Handler {
-	api := New(store, "local-source", []byte("local-ingress-secret"), "http://127.0.0.1:9090/events")
+	api := New(
+		store,
+		"local-source",
+		[]byte("local-ingress-secret"),
+		"http://127.0.0.1:9090/events",
+		[]byte("local-operator-token"),
+	)
 	api.now = func() time.Time { return time.Unix(1_757_023_200, 0) }
 	return api.Handler()
 }

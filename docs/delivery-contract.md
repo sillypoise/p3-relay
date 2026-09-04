@@ -146,7 +146,8 @@ retry_scheduled → dead_lettered
 ```
 
 An authorized replay creates `dead_lettered → pending`, resets the automatic-attempt budget, and
-preserves previous attempt history. Replay is rejected for all other states. State claims have a
+preserves previous attempt history. An event permits at most 16 replays. Replay is rejected for all
+other states and after replay exhaustion. State claims have a
 30-second lease; recovery after an expired lease must preserve the eight-attempt bound and may
 produce a duplicate network request. Database transitions must use compare-and-set conditions so a
 stale worker cannot overwrite newer state.

@@ -3,13 +3,13 @@ package main
 import (
 	"context"
 	"log/slog"
-	"net"
 	"net/http"
 	"os"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sillypoise/p3-relay/internal/delivery"
+	"github.com/sillypoise/p3-relay/internal/netguard"
 	"github.com/sillypoise/p3-relay/internal/postgres"
 )
 
@@ -39,9 +39,10 @@ func main() {
 	}
 	defer pool.Close()
 
+	allow_private := os.Getenv("RELAY_ALLOW_PRIVATE_DESTINATIONS") == "true"
 	worker := delivery.NewWorker(
 		postgres.NewStore(pool),
-		delivery.NewHTTPSender(new_http_client(), []byte(delivery_secret)),
+		delivery.NewHTTPSender(new_http_client(allow_private), []byte(delivery_secret), allow_private),
 		lease_length,
 	)
 	ticker := time.NewTicker(poll_interval)
@@ -58,10 +59,10 @@ func main() {
 	}
 }
 
-func new_http_client() *http.Client {
-	dialer := &net.Dialer{Timeout: 3 * time.Second, KeepAlive: 30 * time.Second}
+func new_http_client(allow_private bool) *http.Client {
+	dialer := netguard.NewDialer(allow_private, 3*time.Second)
 	transport := &http.Transport{
-		Proxy: http.ProxyFromEnvironment, DialContext: dialer.DialContext,
+		Proxy: nil, DialContext: dialer.DialContext,
 		ForceAttemptHTTP2: true, MaxIdleConns: 16, MaxIdleConnsPerHost: 4,
 		IdleConnTimeout: 60 * time.Second, TLSHandshakeTimeout: 3 * time.Second,
 		ResponseHeaderTimeout: 7 * time.Second, ExpectContinueTimeout: time.Second,

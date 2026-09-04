@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/json"
 	"errors"
 	"io"
@@ -24,10 +25,17 @@ type API struct {
 	source_key      string
 	ingress_secret  []byte
 	destination_url string
+	operator_token  []byte
 	now             func() time.Time
 }
 
-func New(store event.Store, source_key string, ingress_secret []byte, destination_url string) *API {
+func New(
+	store event.Store,
+	source_key string,
+	ingress_secret []byte,
+	destination_url string,
+	operator_token []byte,
+) *API {
 	if store == nil {
 		panic("event store is required")
 	}
@@ -40,15 +48,19 @@ func New(store event.Store, source_key string, ingress_secret []byte, destinatio
 	if destination_url == "" {
 		panic("destination URL is required")
 	}
+	if len(operator_token) < 16 {
+		panic("operator token must contain at least 16 bytes")
+	}
 	return &API{
 		store: store, source_key: source_key, ingress_secret: ingress_secret,
-		destination_url: destination_url, now: time.Now,
+		destination_url: destination_url, operator_token: operator_token, now: time.Now,
 	}
 }
 
 func (api *API) Handler() http.Handler {
 	handler := http.NewServeMux()
 	handler.HandleFunc("POST /v1/sources/{source_key}/events", api.events_post)
+	handler.HandleFunc("POST /v1/events/{event_id}/replay", api.events_replay_post)
 	return handler
 }
 
@@ -101,6 +113,44 @@ func (api *API) accept(response http.ResponseWriter, request *http.Request, exte
 	write_json(response, http.StatusAccepted, map[string]any{
 		"event_id": accepted.ID, "status": "pending", "duplicate": accepted.Duplicate,
 	})
+}
+
+func (api *API) events_replay_post(response http.ResponseWriter, request *http.Request) {
+	if !api.authorized(request.Header.Get("Authorization")) {
+		write_error(response, http.StatusUnauthorized, "unauthorized", "Authorization is required.")
+		return
+	}
+	event_id := request.PathValue("event_id")
+	if !identifier.ValidUUID(event_id) {
+		write_error(response, http.StatusBadRequest, "invalid_request", "Event identifier is invalid.")
+		return
+	}
+	error_value := api.store.Replay(request.Context(), event_id, api.source_key)
+	if error_value == nil {
+		write_json(response, http.StatusAccepted, map[string]string{"event_id": event_id, "status": "pending"})
+		return
+	}
+	var not_found event.NotFoundError
+	if errors.As(error_value, &not_found) {
+		write_error(response, http.StatusNotFound, "event_not_found", "Event was not found.")
+		return
+	}
+	var invalid_state event.InvalidStateError
+	if errors.As(error_value, &invalid_state) {
+		write_error(response, http.StatusConflict, "invalid_event_state", "Event cannot be replayed.")
+		return
+	}
+	write_error(response, http.StatusServiceUnavailable, "replay_unavailable", "Replay is unavailable.")
+}
+
+func (api *API) authorized(value string) bool {
+	const prefix = "Bearer "
+	if len(value) <= len(prefix) || value[:len(prefix)] != prefix {
+		return false
+	}
+	supplied_digest := sha256.Sum256([]byte(value[len(prefix):]))
+	expected_digest := sha256.Sum256(api.operator_token)
+	return subtle.ConstantTimeCompare(supplied_digest[:], expected_digest[:]) == 1
 }
 
 func (api *API) valid_timestamp(raw string) (string, bool) {

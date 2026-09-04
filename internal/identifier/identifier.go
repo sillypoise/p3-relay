@@ -21,3 +21,23 @@ func NewUUID() (string, error) {
 		value[10:16],
 	), nil
 }
+
+func ValidUUID(value string) bool {
+	if len(value) != 36 {
+		return false
+	}
+	for index, character := range []byte(value) {
+		if index == 8 || index == 13 || index == 18 || index == 23 {
+			if character != '-' {
+				return false
+			}
+			continue
+		}
+		is_digit := character >= '0' && character <= '9'
+		is_lower_hex := character >= 'a' && character <= 'f'
+		if !is_digit && !is_lower_hex {
+			return false
+		}
+	}
+	return true
+}

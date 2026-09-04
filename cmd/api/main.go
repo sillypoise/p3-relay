@@ -44,6 +44,7 @@ func main() {
 		configuration.source_key,
 		[]byte(configuration.ingress_secret),
 		configuration.destination_url,
+		[]byte(configuration.operator_token),
 	)
 	server := new_server(configuration.address, new_handler(event_api.Handler()))
 
@@ -64,6 +65,7 @@ type configuration struct {
 	source_key      string
 	ingress_secret  string
 	destination_url string
+	operator_token  string
 }
 
 func load_configuration() configuration {
@@ -73,6 +75,7 @@ func load_configuration() configuration {
 		source_key:      os.Getenv("RELAY_SOURCE_KEY"),
 		ingress_secret:  os.Getenv("RELAY_INGRESS_SECRET"),
 		destination_url: os.Getenv("RELAY_DESTINATION_URL"),
+		operator_token:  os.Getenv("RELAY_OPERATOR_TOKEN"),
 	}
 	if value.address == "" {
 		value.address = ":8080"
@@ -83,6 +86,10 @@ func load_configuration() configuration {
 	}
 	if len(value.ingress_secret) < 16 || value.destination_url == "" {
 		slog.Error("RELAY_INGRESS_SECRET and RELAY_DESTINATION_URL are required")
+		os.Exit(1)
+	}
+	if len(value.operator_token) < 16 {
+		slog.Error("RELAY_OPERATOR_TOKEN must contain at least 16 bytes")
 		os.Exit(1)
 	}
 	return value

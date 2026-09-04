@@ -19,17 +19,21 @@ const maximum_response_bytes = 4096
 type HTTPSender struct {
 	client *http.Client
 	secret []byte
-	now    func() time.Time
+	now                 func() time.Time
+	allow_insecure_http bool
 }
 
-func NewHTTPSender(client *http.Client, secret []byte) *HTTPSender {
+func NewHTTPSender(client *http.Client, secret []byte, allow_insecure_http bool) *HTTPSender {
 	if client == nil {
 		panic("HTTP client is required")
 	}
 	if len(secret) < 16 {
 		panic("delivery secret must contain at least 16 bytes")
 	}
-	return &HTTPSender{client: client, secret: secret, now: time.Now}
+	return &HTTPSender{
+		client: client, secret: secret, now: time.Now,
+		allow_insecure_http: allow_insecure_http,
+	}
 }
 
 func (sender *HTTPSender) Send(context_value context.Context, claimed *ClaimedEvent) *Attempt {
@@ -49,6 +53,9 @@ func (sender *HTTPSender) Send(context_value context.Context, claimed *ClaimedEv
 	)
 	if error_value != nil {
 		return network_attempt("invalid_destination", started_at, sender.now(), claimed)
+	}
+	if request.URL.Scheme != "https" && !sender.allow_insecure_http {
+		return network_attempt("insecure_destination", started_at, sender.now(), claimed)
 	}
 	timestamp := strconv.FormatInt(started_at.Unix(), 10)
 	request.Header.Set("Content-Type", "application/json")

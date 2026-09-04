@@ -11,6 +11,7 @@ type ClaimedEvent struct {
 	ClaimID        string
 	Body           []byte
 	DestinationURL string
+	ReplayNumber   uint8
 	AttemptNumber  uint8
 	CreatedAt      time.Time
 }

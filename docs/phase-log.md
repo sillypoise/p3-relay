@@ -33,3 +33,20 @@ Validation: `just check` passed, including formatting, static analysis, strict t
 race and boundary tests, frontend tests, and production builds. The Podman OCI image built and its
 health endpoint passed a container smoke test. An initial base-image pull timeout was traced to
 intermittently unresponsive Docker Hub registry addresses rather than the build definition.
+
+## Phase 3 — Local backend vertical slice
+
+- Added the `p3_relay` schema, repeat-safe migration command, events, delivery attempts, bounded
+  states, leases, replay generations, and queue indexes.
+- Implemented signed receipt, validation before persistence, body-digest idempotency, and stable
+  conflict and unavailable errors.
+- Implemented transactional worker claims, signed outbound delivery, attempt recording, bounded
+  deterministic retries, lease recovery, dead-letter transitions, and authorized replay.
+- Added fail-closed public-address resolution, HTTPS enforcement, redirect refusal, strict network
+  timeouts, and an explicit local-only private-address override.
+- Added deterministic success, temporary-failure, and permanent-failure receiver scenarios.
+
+Validation: `just check` passed. Migration application and repeat execution passed against an
+isolated PostgreSQL 17 cluster. A signed event was accepted, claimed, delivered to the simulator with
+HTTP 204, and recorded as `delivered` with one durable attempt. Invalid receipt, authorization,
+network-address, response-class, exhaustion, and state-transition paths are covered by tests.

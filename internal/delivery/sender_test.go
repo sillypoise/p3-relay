@@ -23,7 +23,7 @@ func TestHTTPSenderSignsAndClassifiesDelivery(t *testing.T) {
 	}))
 	defer receiver.Close()
 
-	sender := NewHTTPSender(receiver.Client(), secret)
+	sender := NewHTTPSender(receiver.Client(), secret, true)
 	fixed_time := time.Unix(1_757_023_200, 0)
 	sender.now = func() time.Time { return fixed_time }
 	attempt := sender.Send(context.Background(), &ClaimedEvent{
@@ -44,7 +44,7 @@ func TestHTTPSenderSignsAndClassifiesDelivery(t *testing.T) {
 
 func TestHTTPSenderRecordsNetworkFailure(t *testing.T) {
 	client := &http.Client{Timeout: 10 * time.Millisecond}
-	sender := NewHTTPSender(client, []byte("delivery-test-secret"))
+	sender := NewHTTPSender(client, []byte("delivery-test-secret"), false)
 	attempt := sender.Send(context.Background(), &ClaimedEvent{
 		ID: "event-1", ClaimID: "claim-1", Body: []byte(`{}`),
 		DestinationURL: "://invalid", AttemptNumber: 8, CreatedAt: time.Now(),
