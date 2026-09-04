@@ -41,7 +41,7 @@ just develop
 ```
 
 `database-create` is a one-time local setup step. `just develop` supervises the API, worker,
-simulated receiver, and Vite frontend together. Open the dashboard at `http://127.0.0.1:4173`.
+simulated receiver, and Vite frontend together. Open the dashboard at `http://127.0.0.1:5173`.
 Common commands are discoverable with `just`; run the complete non-mutating validation set with
 `just check`.
 
