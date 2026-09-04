@@ -14,11 +14,17 @@ install:
 api-develop:
     go run ./cmd/api
 
+worker-develop:
+    go run ./cmd/worker
+
+receiver-develop:
+    go run ./cmd/receiver
+
 web-develop:
     pnpm --dir web dev
 
 develop:
-    just --parallel api-develop web-develop
+    just --parallel api-develop worker-develop receiver-develop web-develop
 
 format:
     gofmt -w cmd
@@ -41,6 +47,8 @@ test:
 
 build:
     go build -o /tmp/p3-relay-api ./cmd/api
+    go build -o /tmp/p3-relay-worker ./cmd/worker
+    go build -o /tmp/p3-relay-receiver ./cmd/receiver
     pnpm --dir web build
 
 check: format-check lint typecheck test build

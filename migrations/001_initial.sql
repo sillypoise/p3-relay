@@ -18,10 +18,13 @@ CREATE TABLE p3_relay.events (
     attempt_count smallint NOT NULL DEFAULT 0 CHECK (attempt_count BETWEEN 0 AND 8),
     next_attempt_at timestamptz NOT NULL DEFAULT clock_timestamp(),
     lease_expires_at timestamptz,
+    claim_id uuid,
     created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
     delivered_at timestamptz,
     UNIQUE (source_key, external_event_id),
-    CHECK (state <> 'delivered' OR delivered_at IS NOT NULL)
+    CHECK (state <> 'delivered' OR delivered_at IS NOT NULL),
+    CHECK ((state = 'delivering') = (claim_id IS NOT NULL)),
+    CHECK ((state = 'delivering') = (lease_expires_at IS NOT NULL))
 );
 
 CREATE INDEX p3_relay.events_delivery_claim_idx
