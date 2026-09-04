@@ -58,6 +58,9 @@ database-create:
 database-start:
     podman start {{postgres_container}}
 
+database-migrate:
+    go run ./cmd/migrate
+
 database-stop:
     podman stop --time 10 {{postgres_container}}
 

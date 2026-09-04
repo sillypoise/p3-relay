@@ -9,8 +9,9 @@ identify seeded traffic and simulated destinations explicitly.
 
 ## Project status
 
-Phase 2, repository foundation, is complete. The API currently exposes only a health endpoint, and
-the web application is a foundation screen; webhook delivery implementation has not started.
+Phase 3, the local backend vertical slice, is in progress. Its database schema, migration command,
+signature primitive, and delivery response policy are implemented; receipt and worker execution are
+not yet implemented.
 
 ## Documentation
 
