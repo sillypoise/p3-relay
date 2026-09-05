@@ -67,6 +67,10 @@ If a rule should apply across multiple repositories, promote it into the guide p
 ## Local Workflow Notes
 
 - Preferred commands: Use the root `justfile`; use Podman rather than Docker.
+- AWS access: In interactive Zsh, use `aws-run sp aws <arguments>`; the wrapper takes the complete
+  command. Region `us-east-1` was verified. Do not print or persist credentials.
+- Deployment constraint: AWS budget ceiling is USD 50/month; review estimates before applying.
+  See `docs/deployment-plan.md` for current topology and unresolved deployment decisions.
 - Safe-to-edit areas: Application code and project documentation within this repository.
 - Areas requiring extra care: Delivery state transitions, outbound network validation, credentials,
   shared-database schema qualification, and public sandbox isolation.

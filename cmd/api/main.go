@@ -15,6 +15,7 @@ import (
 	"github.com/sillypoise/p3-relay/internal/notification"
 	"github.com/sillypoise/p3-relay/internal/postgres"
 	"github.com/sillypoise/p3-relay/internal/sandbox"
+	"github.com/sillypoise/p3-relay/internal/webui"
 )
 
 const (
@@ -47,7 +48,21 @@ func main() {
 		slog.Error("notification queue startup validation failed")
 		os.Exit(1)
 	}
-	server := new_server(configuration.address, new_handler(main_routes(&configuration, pool, queue)))
+	handler := new_handler(main_routes(&configuration, pool, queue))
+	if directory := os.Getenv("RELAY_WEB_DIRECTORY"); directory != "" {
+		site, err := webui.Open(directory)
+		if err != nil {
+			slog.Error("compiled dashboard unavailable")
+			os.Exit(1)
+		}
+		defer func() {
+			if err := site.Close(); err != nil {
+				slog.Error("web root close failed")
+			}
+		}()
+		handler.Handle("/", site)
+	}
+	server := new_server(configuration.address, handler)
 
 	slog.Info("starting Relay API", "address", configuration.address)
 	error_value = server.ListenAndServe()
@@ -130,7 +145,7 @@ func new_server(address string, handler http.Handler) *http.Server {
 	}
 }
 
-func new_handler(events_handler http.Handler) http.Handler {
+func new_handler(events_handler http.Handler) *http.ServeMux {
 	handler := http.NewServeMux()
 	handler.HandleFunc("GET /health", health_get)
 	handler.Handle("/v1/", events_handler)

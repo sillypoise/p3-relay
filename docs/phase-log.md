@@ -113,3 +113,18 @@ idempotent receipt, replay, and exact delivery-age expiry against isolated Postg
 
 Application integration is complete. No live AWS calls or resource changes were made. Queue/DLQ
 provisioning, IAM enforcement, redrive verification, and measured operations remain Phase 7.
+
+## Phase 7 — Deployment preparation (in progress)
+
+- Verified AWS identity through `aws-run sp aws ...` in interactive Zsh; confirmed `us-east-1`.
+- Recorded the USD 50/month AWS ceiling and a candidate shared-task topology, pending a cost review
+  and public hostname selection. No infrastructure was provisioned.
+- Updated the multi-stage Containerfile for locked Go/pnpm builds, API/worker/migration binaries,
+  compiled frontend assets, CA certificates, and non-root execution.
+- Added a build-context allowlist and same-origin static serving with deep links, no directory
+  listings, root-contained file access, and security headers.
+
+Validation: `just check` passed, covering missing builds, traversal, symlinks, and API routing.
+A native production-bundle smoke test verified HTML, JavaScript, deep links, CSP, and denied API
+access. OCI build verification remains blocked by Docker Hub TLS timeouts;
+current-price lookup also timed out. Cost approval, DNS/HTTPS, OpenTofu, and deployment remain open.
