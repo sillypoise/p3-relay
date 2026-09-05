@@ -142,7 +142,24 @@ current-price lookup initially timed out. Deployment remains open.
 - Generated a live bootstrap plan: five additions, no changes/deletions; did not apply. Regional STS
   timed out; AWS's global STS endpoint worked through the approved wrapper with TLS checks intact.
 
-Validation: `just check` passed, including five mocked infrastructure tests. A simulated mock-cleanup
+Validation: `just check` passed with five mocked infrastructure tests. A simulated mock-cleanup
 failure was correctly rejected by the recipe. Mocked tests do not prove
 live IAM or queue behavior. Docker Hub and public ECR pulls still timed out. Runtime/IAM/networking
 configuration, secret setup, migrations, budget alerts, apply, and live recovery proof remain open.
+
+### Task definitions and scoped IAM
+
+- Added digest-gated Fargate task definitions: one bounded API/worker task and a separate one-off
+  migration task. Empty image configuration registers neither; no service or running tasks exist.
+- Added source-queue-only runtime IAM and separate execution roles for runtime/migration secrets.
+  Recorded the shared task-role tradeoff in the notification contract; wire semantics are unchanged.
+- Separated migration/runtime secret references and gave the migration task no AWS application
+  role. Database grants and TLS still require live verification.
+- Added tests for credential separation, task limits, immutable image input, malformed origins, and
+  exact DNS length boundaries. Sixteen infrastructure tests now pass under mocked providers.
+- Retried state-bootstrap planning: both regional and global STS timed out. Did not apply; no cloud
+  resources or shared Railway objects were modified. A fresh successful plan is required.
+
+Remaining: restore AWS/registry connectivity, validate the OCI image and memory sizing, finish the
+Express service/control-plane IAM and network configuration, configure secrets/budget alerts, then
+review plans, apply, migrate, and verify live failure/recovery paths.

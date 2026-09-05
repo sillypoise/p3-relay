@@ -13,7 +13,7 @@ Status: Phase 7 in progress. No infrastructure has been provisioned.
 - The operator approved a temporary provider-generated HTTPS address; no domain purchase or custom
   DNS is required for this phase. The sandbox still needs an exact configured HTTPS Origin.
 
-## Runtime decision, not yet implemented or applied
+## Runtime design and remaining gates
 
 Prefer ECS Express Mode: it supplies a generated HTTPS URL, TLS load balancer, and Fargate service.
 Use one 0.25-vCPU/512-MiB task with separate API and worker containers sharing the image; serve the
@@ -41,16 +41,18 @@ usage charges and taxes. Budget alerts are not hard caps. Full cost review remai
 
 ## Infrastructure preparation
 
-[Infrastructure foundations](../infra/README.md) now define encrypted state storage, immutable image
-releases, source-restricted encrypted SQS/DLQ, bounded log retention, and secret metadata only.
-Five mocked tests pass, covering valid, invalid, and security boundary paths. These are not live
-IAM, queue, redrive, or deployment evidence.
+[Infrastructure foundations](../infra/README.md) define encrypted state storage, immutable image
+releases, encrypted SQS/DLQ, scoped IAM roles, bounded logs, and separate runtime/migration
+secret metadata. Digest-gated runtime and migration task definitions are implemented; no ECS service
+or running tasks are created. Sixteen mocked tests pass, covering invalid and boundary paths.
+These are not live IAM, queue, redrive, or deployment evidence.
 
 A live state-bootstrap plan was generated: five additions, zero changes, zero deletions. Nothing
 was applied. The regional STS endpoint timed out; AWS's official global STS endpoint worked with
-certificate verification unchanged. The scoped workaround and teardown protections are documented
-in the infrastructure README. Runtime wiring, secrets, migrations, budget notifications, and live
-failure/recovery verification remain open.
+certificate verification unchanged. On the latest retry both endpoints timed out, so no apply was
+attempted. A new successful plan is required. The workaround and teardown protections are documented
+in the infrastructure README. Express service/control-plane IAM, networking, secrets, migrations,
+budget notifications, capacity measurement, and live failure/recovery verification remain open.
 
 ## Container packaging
 

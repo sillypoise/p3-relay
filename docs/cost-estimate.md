@@ -23,8 +23,8 @@ Confidence: high for these catalog rates and arithmetic; medium for sizing and a
 assumptions until the runtime plan and actual deployment are checked. ECS Express Mode has no
 additional service fee. Its underlying resources are charged normally.
 
-The remainder must cover SQS requests, CloudWatch logs/alarms, Secrets Manager, ECR, S3 state,
-transfer, rollout overlap, and taxes. Their full estimate and budget notification destination are
+The remainder must cover SQS requests, CloudWatch logs/alarms, two Secrets Manager secrets, ECR,
+S3 state, transfer, one-off migrations, rollout overlap, and taxes. Their full estimate and budget notification destination are
 still pending. Keep a low-traffic target around $45 before taxes, but do not claim a $50 hard cap:
 traffic, retained images, address allocation, and rollout duration can increase the bill.
 

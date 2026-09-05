@@ -79,6 +79,19 @@ Minimum runtime permissions, restricted to this queue ARN:
 - Worker: `sqs:GetQueueAttributes`, `sqs:ReceiveMessage`, `sqs:DeleteMessage`.
 - Neither runtime needs queue creation/deletion, purge, policy mutation, or DLQ redrive permissions.
 
+Stage 7 deployment binding: the proposed single Fargate task co-locates API and worker, so its
+one task role grants the union of these four distinct actions on the source queue only. Container
+environment separation is not IAM isolation. This saves a second steady-state task but gives the
+API process worker hint permissions too; database authorization remains unchanged. Neither process
+can read Secrets Manager through this role. ECS execution roles retrieve the selected secret fields.
+A separate migration execution role reads only the migration secret, not the runtime secret.
+
+Compatibility: deployment authority changes from separate conceptual roles to a shared task
+principal; notification v1, HTTP responses, and delivery semantics are unchanged. Mocked policy and
+task-definition checks cover the permitted set and excluded administrative/secret capabilities;
+live IAM enforcement remains unverified. Owner: repository maintainer. Reassess co-location if
+independent process-level IAM isolation becomes required.
+
 The official AWS SDK is admitted to avoid bespoke SigV4 signing and credential renewal code.
 Use ECS task roles in deployment. The AWS SDK credential chain is used; this phase does not copy
 local credentials into application configuration. The client pins the commercial regional HTTPS

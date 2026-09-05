@@ -18,7 +18,8 @@ see the sandbox contract for HTTPS configuration and rollout requirements.
 Phase 6 adds optional SQS notifications with PostgreSQL reconciliation for lost or duplicated hints.
 Application integration is tested locally. Phase 7 deployment preparation is in progress: AWS access
 is verified and container packaging is updated. OpenTofu foundations and mocked security tests are
-added; the state-bootstrap plan is generated but not applied. Infrastructure is not provisioned.
+added, including scoped IAM and digest-gated task definitions. The bootstrap plan was not applied;
+its latest refresh hit AWS TLS timeouts. Infrastructure is not provisioned.
 
 ## Documentation
 

@@ -31,6 +31,14 @@ resource "aws_secretsmanager_secret" "runtime" {
   recovery_window_in_days = 30
 }
 
+# DDL credentials must never be injected into the public API or delivery worker.
+resource "aws_secretsmanager_secret" "migration" {
+  name                    = "p3-relay/migration"
+  recovery_window_in_days = 30
+}
+
+output "migration_secret_arn" { value = aws_secretsmanager_secret.migration.arn }
+
 output "repository_url" { value = aws_ecr_repository.runtime.repository_url }
 output "notification_queue_url" { value = aws_sqs_queue.notifications.url }
 output "runtime_secret_arn" { value = aws_secretsmanager_secret.runtime.arn }

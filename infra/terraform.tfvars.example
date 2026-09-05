@@ -1,1 +1,6 @@
 aws_account_id = "123456789012" # Replace with the account verified by the approved AWS wrapper.
+
+# Empty registers no task definitions; use only a reviewed digest already present in Relay's ECR.
+runtime_image_digest = ""
+# Enable only after verifying the generated HTTPS endpoint; no path or trailing slash.
+sandbox_origin = ""
