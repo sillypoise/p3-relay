@@ -11,13 +11,16 @@ identify seeded traffic and simulated destinations explicitly.
 
 Phase 4, the operator dashboard, is complete. Relay now exposes authenticated operational reads and
 responsive overview, event list, event detail, attempt timeline, replay, and endpoint configuration
-views. Public sandbox access remains for Phase 5.
+views. Phase 5 adds an isolated visitor sandbox with signed expiring cookies, transactional quotas,
+controlled worker simulations, replay, and bounded cleanup. Visitor routes are disabled by default;
+see the sandbox contract for HTTPS configuration and rollout requirements.
 
 ## Documentation
 
 - [Product brief](docs/product-brief.md)
 - [Delivery contract](docs/delivery-contract.md)
 - [Dashboard contract](docs/dashboard-contract.md)
+- [Sandbox contract](docs/sandbox-contract.md)
 - [Phase log](docs/phase-log.md)
 
 ## Planned stack
@@ -43,7 +46,8 @@ just develop
 `database-create` is a one-time local setup step. `just develop` supervises the API, worker,
 simulated receiver, and Vite frontend together. Open the dashboard at `http://127.0.0.1:5173`.
 Common commands are discoverable with `just`; run the complete non-mutating validation set with
-`just check`.
+`just check`. Phase 5 additionally provides `just sandbox-integration` for an empty disposable test
+database and `just browser-test` for mobile/desktop Chromium checks; see the sandbox contract.
 
 Copy `.env.example` to `.env` only when local overrides are needed. The local values are development
 credentials and must not be reused in deployment.

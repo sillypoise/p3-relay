@@ -11,6 +11,7 @@ import (
 	"github.com/sillypoise/p3-relay/internal/delivery"
 	"github.com/sillypoise/p3-relay/internal/netguard"
 	"github.com/sillypoise/p3-relay/internal/postgres"
+	"github.com/sillypoise/p3-relay/internal/sandbox"
 )
 
 const (
@@ -47,8 +48,20 @@ func main() {
 	)
 	ticker := time.NewTicker(poll_interval)
 	defer ticker.Stop()
+	nextCleanup := time.Now()
 	for now := range ticker.C {
-		processed, run_error := worker.RunOnce(context.Background(), now)
+		if now.Before(nextCleanup) == false {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			err := (&sandbox.Store{Pool: pool}).Cleanup(ctx)
+			cancel()
+			if err != nil {
+				slog.Error("sandbox cleanup failed")
+			}
+			nextCleanup = now.Add(time.Minute)
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+		processed, run_error := worker.RunOnce(ctx, now)
+		cancel()
 		if run_error != nil {
 			slog.Error("delivery cycle failed", "error", run_error)
 			continue

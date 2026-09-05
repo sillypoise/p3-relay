@@ -2,74 +2,77 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"github.com/jackc/pgx/v5"
 	"log/slog"
 	"os"
 	"time"
-
-	"github.com/jackc/pgx/v5"
 )
 
-const migration_timeout = 30 * time.Second
-
 func main() {
-	database_url := os.Getenv("RELAY_DATABASE_URL")
-	if database_url == "" {
-		slog.Error("RELAY_DATABASE_URL is required")
+	if err := migrate(); err != nil {
+		slog.Error("migration failed")
 		os.Exit(1)
 	}
-
-	migration, error_value := os.ReadFile("migrations/001_initial.sql")
-	if error_value != nil {
-		slog.Error("read migration", "error", error_value)
-		os.Exit(1)
-	}
-
-	context_value, cancel := context.WithTimeout(context.Background(), migration_timeout)
-	defer cancel()
-
-	connection, error_value := pgx.Connect(context_value, database_url)
-	if error_value != nil {
-		slog.Error("connect to PostgreSQL", "error", error_value)
-		os.Exit(1)
-	}
-	defer func() {
-		if close_error := connection.Close(context.Background()); close_error != nil {
-			slog.Error("close PostgreSQL connection", "error", close_error)
-		}
-	}()
-
-	applied, error_value := migration_applied(context_value, connection)
-	if error_value != nil {
-		slog.Error("check migration version", "error", error_value)
-		os.Exit(1)
-	}
-	if applied {
-		slog.Info("database migration already applied", "version", 1)
-		return
-	}
-
-	if _, error_value = connection.Exec(context_value, string(migration)); error_value != nil {
-		slog.Error("apply database migration", "error", error_value)
-		os.Exit(1)
-	}
-	slog.Info("database migration applied", "version", 1)
 }
 
-func migration_applied(context_value context.Context, connection *pgx.Conn) (bool, error) {
-	const relation_query = `SELECT to_regclass('p3_relay.schema_migrations') IS NOT NULL`
-	var relation_exists bool
-	error_value := connection.QueryRow(context_value, relation_query).Scan(&relation_exists)
-	if error_value != nil {
-		return false, error_value
+func migrate() error {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	if os.Getenv("RELAY_DATABASE_URL") == "" {
+		return fmt.Errorf("database URL required")
 	}
-	if !relation_exists {
-		return false, nil
+	conn, err := pgx.Connect(ctx, os.Getenv("RELAY_DATABASE_URL"))
+	if err != nil {
+		return err
 	}
-
-	const version_query = `SELECT EXISTS (
-        SELECT FROM p3_relay.schema_migrations WHERE version = 1
-    )`
-	var applied bool
-	error_value = connection.QueryRow(context_value, version_query).Scan(&applied)
-	return applied, error_value
+	defer func() {
+		if err := conn.Close(ctx); err != nil {
+			slog.Error("migration connection close failed")
+		}
+	}()
+	tx, err := conn.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err := tx.Rollback(ctx); err != nil && err != pgx.ErrTxClosed {
+			slog.Error("migration rollback failed")
+		}
+	}()
+	// Serialize migrations without touching another project's schemas.
+	if _, err = tx.Exec(ctx, "SELECT pg_advisory_xact_lock(330052)"); err != nil {
+		return err
+	}
+	var exists bool
+	if err = tx.QueryRow(ctx, "SELECT to_regclass('p3_relay.schema_migrations') IS NOT NULL").Scan(&exists); err != nil {
+		return err
+	}
+	var version int32
+	if exists {
+		if err = tx.QueryRow(ctx, "SELECT COALESCE(max(version),0) FROM p3_relay.schema_migrations").Scan(&version); err != nil {
+			return err
+		}
+	}
+	paths := [...]string{"migrations/001_initial.sql", "migrations/002_sandbox.sql"}
+	if version > int32(len(paths)) {
+		return fmt.Errorf("unsupported migration version")
+	}
+	for index, path := range paths {
+		if int32(index) < version {
+			continue
+		}
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		if _, err = tx.Exec(ctx, string(content)); err != nil {
+			return err
+		}
+	}
+	if err = tx.Commit(ctx); err != nil {
+		return err
+	}
+	slog.Info("migrations applied", "version", len(paths))
+	return nil
 }

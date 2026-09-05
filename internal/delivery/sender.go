@@ -17,8 +17,8 @@ import (
 const maximum_response_bytes = 4096
 
 type HTTPSender struct {
-	client *http.Client
-	secret []byte
+	client              *http.Client
+	secret              []byte
 	now                 func() time.Time
 	allow_insecure_http bool
 }
@@ -39,6 +39,9 @@ func NewHTTPSender(client *http.Client, secret []byte, allow_insecure_http bool)
 func (sender *HTTPSender) Send(context_value context.Context, claimed *ClaimedEvent) *Attempt {
 	if claimed == nil {
 		panic("claimed event is required")
+	}
+	if claimed.Sandbox {
+		return sandbox_attempt(claimed, sender.now())
 	}
 	started_at := sender.now()
 	attempt_id, error_value := identifier.NewUUID()

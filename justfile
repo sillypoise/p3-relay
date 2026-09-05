@@ -43,11 +43,11 @@ develop:
     wait -n "${processes[@]}"
 
 format:
-    gofmt -w cmd
+    gofmt -w cmd internal
     pnpm --dir web format
 
 format-check:
-    test -z "$(gofmt -l cmd)"
+    test -z "$(gofmt -l cmd internal)"
     pnpm --dir web format-check
 
 lint:
@@ -68,6 +68,18 @@ build:
     pnpm --dir web build
 
 check: format-check lint typecheck test build
+
+# Requires an empty disposable PostgreSQL database named p3_relay_test; never use Railway.
+sandbox-integration:
+    go test -race -tags integration ./internal/sandbox -run TestSandboxIntegration -count=1
+
+# Install the pinned Chromium runtime for browser validation.
+browser-install:
+    pnpm --dir web exec playwright install chromium
+
+# Exercise visitor loading, errors, quotas, and expiry at mobile and desktop sizes.
+browser-test:
+    pnpm --dir web test-browser
 
 # Creation is separate so repeated starts never replace or mutate the database container.
 database-create:

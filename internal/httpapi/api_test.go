@@ -15,8 +15,8 @@ import (
 )
 
 type store_stub struct {
-	accepted event.Accepted
-	error    error
+	accepted     event.Accepted
+	error        error
 	receipt      *event.Receipt
 	replay_error error
 	replayed_id  string
@@ -158,10 +158,10 @@ func TestEventsReadRejectsUnknownState(t *testing.T) {
 func TestEventsReplayRequiresAuthorizationAndDeadLetterState(t *testing.T) {
 	const event_id = "5a9c38c7-e229-4dad-a702-b03780ba69a7"
 	test_cases := []struct {
-		name        string
-		token       string
+		name         string
+		token        string
 		replay_error error
-		status      int
+		status       int
 	}{
 		{name: "missing authorization", status: http.StatusUnauthorized},
 		{name: "wrong authorization", token: "Bearer wrong-token-value", status: http.StatusUnauthorized},

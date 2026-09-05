@@ -10,11 +10,12 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "format": "oxfmt --write src vite.config.ts vitest.config.ts",
-    "format-check": "oxfmt --check src vite.config.ts vitest.config.ts",
-    "lint": "oxlint --deny-warnings src vite.config.ts vitest.config.ts",
+    "format": "oxfmt --write src e2e vite.config.ts vitest.config.ts playwright.config.ts",
+    "format-check": "oxfmt --check src e2e vite.config.ts vitest.config.ts playwright.config.ts",
+    "lint": "oxlint --deny-warnings src e2e vite.config.ts vitest.config.ts playwright.config.ts",
     "typecheck": "tsc -b",
     "test": "vitest run",
+    "test-browser": "playwright test",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -24,6 +25,7 @@
     "react-dom": "19.2.8"
   },
   "devDependencies": {
+    "@playwright/test": "1.63.0",
     "@testing-library/jest-dom": "7.0.1",
     "@testing-library/react": "16.3.3",
     "@types/node": "24.13.3",

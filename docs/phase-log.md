@@ -1,6 +1,6 @@
 # Phase Log
 
-This log records completed project phases. Entries describe verified work rather than planned work.
+This log records completed work and explicitly marked in-progress phases.
 
 ## Phase 1 — Product and delivery contracts
 
@@ -70,3 +70,25 @@ Validation: `just check` passed, including authenticated and denied API paths, s
 frontend authorization rendering, and the production frontend build. Automated browser screenshot
 comparison is not configured; final visual review at representative viewports remains a shipping
 check.
+
+## Phase 5 — Public sandbox controls
+
+- Added signed 30-minute visitor cookies, persistent session ownership, exact-origin mutation
+  checks, and separate visitor routes that cannot use operator authority.
+- Added migration 002 in `p3_relay`, serialized global quotas, per-session event limits, two-replay
+  limits, expired-session claim exclusion, and bounded cleanup that preserves active leases.
+- Added visitor event creation, list/detail, replay, quota feedback, and session-expiry recovery.
+- Kept PostgreSQL receipt and worker retries real; receiver responses are explicitly simulated
+  in-process and cannot make external network requests.
+- Documented default-disabled enablement, HTTPS/key requirements, controlled migration rollout,
+  cleanup, and test commands in `docs/sandbox-contract.md`.
+- Extended Go formatting checks to include `internal/` and added pinned Chromium browser tests.
+
+Validation: `just check` passed. `just sandbox-integration` passed with race detection against an
+isolated PostgreSQL 17 cluster, including TLS cookie round-trip, two-visitor isolation, concurrent
+quota admission, stale-worker recovery, retry/replay history, expiry, lease-aware cleanup, and
+unavailable database handling. Migration application and repeat execution passed. Four Chromium
+UI tests passed at 390×844 and 1440×900 using explicitly mocked API fixtures.
+
+Deployment remains pending. No shared Railway resources were modified; public routes remain
+disabled unless the operator supplies an HTTPS origin and a separate sandbox signing key.

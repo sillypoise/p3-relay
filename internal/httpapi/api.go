@@ -17,7 +17,7 @@ import (
 
 const (
 	maximum_body_bytes = 256 * 1024
-	timestamp_window    = 5 * time.Minute
+	timestamp_window   = 5 * time.Minute
 )
 
 type API struct {

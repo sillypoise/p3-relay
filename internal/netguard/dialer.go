@@ -22,8 +22,8 @@ func NewDialer(allow_private bool, timeout time.Duration) *Dialer {
 		panic("positive dial timeout is required")
 	}
 	return &Dialer{
-		resolver: net.DefaultResolver,
-		network: &net.Dialer{Timeout: timeout, KeepAlive: 30 * time.Second},
+		resolver:      net.DefaultResolver,
+		network:       &net.Dialer{Timeout: timeout, KeepAlive: 30 * time.Second},
 		allow_private: allow_private,
 	}
 }

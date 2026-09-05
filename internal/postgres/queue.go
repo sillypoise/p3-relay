@@ -19,9 +19,12 @@ func (store *Store) Claim(context_value context.Context, now time.Time, lease ti
 	const query = `
 		WITH candidate AS (
 			SELECT id, state FROM p3_relay.events
-			WHERE (
+			WHERE ((
 				state IN ('pending', 'retry_scheduled') AND next_attempt_at <= $1
-			) OR (state = 'delivering' AND lease_expires_at <= $1)
+			) OR (state = 'delivering' AND lease_expires_at <= $1))
+            AND (sandbox_id IS NULL OR EXISTS (
+                SELECT FROM p3_relay.sandbox_sessions s
+                WHERE s.id=sandbox_id AND s.expires_at>$1))
 			ORDER BY next_attempt_at, created_at
 			FOR UPDATE SKIP LOCKED LIMIT 1
 		)
@@ -32,7 +35,7 @@ func (store *Store) Claim(context_value context.Context, now time.Time, lease ti
 			lease_expires_at = $2, claim_id = $3
 		FROM candidate WHERE event.id = candidate.id
 		RETURNING event.id, event.body, event.destination_url,
-			event.replay_count, event.attempt_count, event.created_at`
+			event.replay_count, event.attempt_count, event.created_at, event.sandbox_id IS NOT NULL`
 	claimed := &delivery.ClaimedEvent{ClaimID: claim_id}
 	error_value = store.pool.QueryRow(context_value, query, now, now.Add(lease), claim_id).Scan(
 		&claimed.ID,
@@ -41,6 +44,7 @@ func (store *Store) Claim(context_value context.Context, now time.Time, lease ti
 		&claimed.ReplayNumber,
 		&claimed.AttemptNumber,
 		&claimed.CreatedAt,
+		&claimed.Sandbox,
 	)
 	if errors.Is(error_value, pgx.ErrNoRows) {
 		return nil, nil

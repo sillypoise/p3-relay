@@ -36,14 +36,14 @@ type Summary struct {
 }
 
 type AttemptView struct {
-	ReplayNumber   uint8     `json:"replay_number"`
-	AttemptNumber  uint8     `json:"attempt_number"`
-	Outcome        string    `json:"outcome"`
-	StatusCode     *uint16   `json:"status_code"`
-	ErrorCode      *string   `json:"error_code"`
-	StartedAt      time.Time `json:"started_at"`
-	FinishedAt     time.Time `json:"finished_at"`
-	ResponseExcerpt string   `json:"response_excerpt"`
+	ReplayNumber    uint8     `json:"replay_number"`
+	AttemptNumber   uint8     `json:"attempt_number"`
+	Outcome         string    `json:"outcome"`
+	StatusCode      *uint16   `json:"status_code"`
+	ErrorCode       *string   `json:"error_code"`
+	StartedAt       time.Time `json:"started_at"`
+	FinishedAt      time.Time `json:"finished_at"`
+	ResponseExcerpt string    `json:"response_excerpt"`
 }
 
 type Detail struct {

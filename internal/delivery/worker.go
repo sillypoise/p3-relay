@@ -7,6 +7,7 @@ import (
 )
 
 type ClaimedEvent struct {
+	Sandbox        bool
 	ID             string
 	ClaimID        string
 	Body           []byte

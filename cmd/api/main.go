@@ -2,15 +2,18 @@ package main
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 	"log/slog"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sillypoise/p3-relay/internal/httpapi"
 	"github.com/sillypoise/p3-relay/internal/postgres"
+	"github.com/sillypoise/p3-relay/internal/sandbox"
 )
 
 const (
@@ -46,7 +49,18 @@ func main() {
 		configuration.destination_url,
 		[]byte(configuration.operator_token),
 	)
-	server := new_server(configuration.address, new_handler(event_api.Handler()))
+	routes := http.NewServeMux()
+	routes.Handle("/v1/", event_api.Handler())
+	if origin := os.Getenv("RELAY_SANDBOX_ORIGIN"); origin != "" {
+		key, err := hex.DecodeString(os.Getenv("RELAY_SANDBOX_KEY"))
+		visitor := &sandbox.Handler{Store: &sandbox.Store{Pool: pool}, Reads: store, Key: key, Origin: origin}
+		if err != nil || visitor.Valid() == false {
+			slog.Error("invalid sandbox configuration")
+			os.Exit(1)
+		}
+		routes.Handle("/v1/sandbox/", visitor)
+	}
+	server := new_server(configuration.address, new_handler(routes))
 
 	slog.Info("starting Relay API", "address", configuration.address)
 	error_value = server.ListenAndServe()
@@ -76,6 +90,10 @@ func load_configuration() configuration {
 		ingress_secret:  os.Getenv("RELAY_INGRESS_SECRET"),
 		destination_url: os.Getenv("RELAY_DESTINATION_URL"),
 		operator_token:  os.Getenv("RELAY_OPERATOR_TOKEN"),
+	}
+	if strings.HasPrefix(value.source_key, "sandbox:") {
+		slog.Error("reserved source key namespace")
+		os.Exit(1)
 	}
 	if value.address == "" {
 		value.address = ":8080"

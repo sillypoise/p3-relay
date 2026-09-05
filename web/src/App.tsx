@@ -5,6 +5,7 @@ import { useState } from "react";
 import { hasToken, setToken } from "./api";
 import { router } from "./router";
 import "./App.css";
+import { Sandbox } from "./Sandbox";
 
 const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: 1, staleTime: 5_000 } },
@@ -12,7 +13,18 @@ const queryClient = new QueryClient({
 
 export function App() {
     const [authorized, setAuthorized] = useState(hasToken());
-    if (!authorized) return <Authorization onAuthorized={() => setAuthorized(true)} />;
+    const [sandbox, setSandbox] = useState(false);
+    if (sandbox) return <Sandbox onExit={() => setSandbox(false)} />;
+    if (!authorized)
+        return (
+            <>
+                <Authorization onAuthorized={() => setAuthorized(true)} />
+                <section className="sandbox-entry">
+                    <button onClick={() => setSandbox(true)}>Try the public sandbox</button>
+                    <p>Simulated receivers. Isolated visitor data. No operator token required.</p>
+                </section>
+            </>
+        );
     return (
         <QueryClientProvider client={queryClient}>
             <RouterProvider router={router} />
