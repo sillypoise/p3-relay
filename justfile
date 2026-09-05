@@ -10,6 +10,7 @@ _default:
 install:
     go mod download
     pnpm --dir web install --frozen-lockfile
+    just infrastructure-init
 
 api-develop:
     go run ./cmd/api
@@ -42,7 +43,7 @@ develop:
     (cd web && exec node_modules/.bin/vite) & processes+=("$!")
     wait -n "${processes[@]}"
 
-format:
+format: infrastructure-format
     gofmt -w cmd internal
     pnpm --dir web format
 
@@ -57,7 +58,7 @@ lint:
 typecheck:
     pnpm --dir web typecheck
 
-test:
+test: infrastructure-test
     go test -race -cover ./...
     pnpm --dir web test
 
@@ -67,7 +68,7 @@ build:
     go build -o /tmp/p3-relay-receiver ./cmd/receiver
     pnpm --dir web build
 
-check: format-check lint typecheck test build
+check: format-check lint typecheck test build infrastructure-validate
 
 # Requires an empty disposable PostgreSQL database named p3_relay_test; never use Railway.
 sandbox-integration:
@@ -109,3 +110,54 @@ database-remove:
 
 container-build:
     podman build --tag localhost/p3-relay-api:development --file Containerfile .
+
+# Initialize providers for offline validation; no cloud resources or state bucket are created.
+infrastructure-init:
+    tofu -chdir=infra init -backend=false -input=false
+    tofu -chdir=infra/bootstrap init -backend=false -input=false
+
+# Format project-owned OpenTofu configuration.
+infrastructure-format:
+    tofu fmt -recursive infra
+
+# Validate both the state bootstrap and the application foundations.
+infrastructure-validate:
+    tofu fmt -check -recursive infra
+    tofu -chdir=infra validate
+    tofu -chdir=infra/bootstrap validate
+
+# Mocked provider tests include invalid inputs and notification security boundaries.
+infrastructure-test:
+    tofu -chdir=infra test
+    # OpenTofu 1.11 can report mocked cleanup errors with a zero exit status.
+    test ! -e infra/errored_test.tfstate
+    tofu -chdir=infra/bootstrap test
+    test ! -e infra/bootstrap/errored_test.tfstate
+
+# Run via aws-run sp with TF_VAR_aws_account_id set to the verified account.
+infrastructure-bootstrap-plan:
+    umask 077; tofu -chdir=infra/bootstrap plan -input=false -out=bootstrap.tfplan
+
+[confirm("Apply the reviewed state-bucket bootstrap plan?")]
+infrastructure-bootstrap-apply:
+    umask 077; tofu -chdir=infra/bootstrap apply -input=false bootstrap.tfplan
+
+# Requires the approved state bucket and a local infra/backend.hcl, containing no credentials.
+infrastructure-connect:
+    tofu -chdir=infra init -input=false -backend-config=backend.hcl
+
+# Produce a saved plan for review, using the approved AWS wrapper.
+infrastructure-plan:
+    umask 077; tofu -chdir=infra plan -input=false -out=relay.tfplan
+
+[confirm("Apply the reviewed Relay infrastructure plan?")]
+infrastructure-apply:
+    umask 077; tofu -chdir=infra apply -input=false relay.tfplan
+
+# Destruction is always previewed separately and never runs from check.
+infrastructure-destroy-plan:
+    umask 077; tofu -chdir=infra plan -destroy -input=false -out=destroy.tfplan
+
+[confirm("Apply the reviewed destruction plan for Relay infrastructure?")]
+infrastructure-destroy:
+    umask 077; tofu -chdir=infra apply -input=false destroy.tfplan

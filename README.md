@@ -17,7 +17,8 @@ see the sandbox contract for HTTPS configuration and rollout requirements.
 
 Phase 6 adds optional SQS notifications with PostgreSQL reconciliation for lost or duplicated hints.
 Application integration is tested locally. Phase 7 deployment preparation is in progress: AWS access
-is verified and container packaging is updated, but infrastructure is not provisioned.
+is verified and container packaging is updated. OpenTofu foundations and mocked security tests are
+added; the state-bootstrap plan is generated but not applied. Infrastructure is not provisioned.
 
 ## Documentation
 
@@ -27,6 +28,8 @@ is verified and container packaging is updated, but infrastructure is not provis
 - [Sandbox contract](docs/sandbox-contract.md)
 - [SQS notification contract](docs/notification-contract.md)
 - [Deployment preparation](docs/deployment-plan.md)
+- [Infrastructure workflow](infra/README.md)
+- [AWS cost estimate](docs/cost-estimate.md)
 - [Phase log](docs/phase-log.md)
 
 ## Planned stack
@@ -40,7 +43,7 @@ is verified and container packaging is updated, but infrastructure is not provis
 
 ## Local development
 
-Requirements are Go 1.25, Node.js 24, pnpm 10, just, and Podman.
+Requirements are Go 1.25, Node.js 24, pnpm 10, just, Podman, and OpenTofu 1.11.x.
 
 ```text
 just install

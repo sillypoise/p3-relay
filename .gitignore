@@ -23,6 +23,7 @@
 *.tfplan
 *.tfvars
 !*.tfvars.example
+/infra/backend.hcl
 
 # Editors and operating systems.
 .idea/

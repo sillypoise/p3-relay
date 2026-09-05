@@ -46,7 +46,7 @@ If a rule should apply across multiple repositories, promote it into the guide p
 - Primary languages: Go for the API and worker; TypeScript and React for the web application; SQL
   for PostgreSQL; HCL for OpenTofu.
 - Key directories: `cmd/` contains Go entry points, `web/` contains the React application, `docs/`
-  contains product and delivery contracts, and future `infra/` will contain OpenTofu.
+  contains product and delivery contracts, and `infra/` contains OpenTofu foundations and tests.
 - Architectural constraints: PostgreSQL is authoritative. Optional AWS SQS hints prompt bounded
   database reconciliation; queue messages never authorize delivery. Objects live in `p3_relay`
   because the Railway PostgreSQL instance is shared with other portfolio projects.
@@ -59,7 +59,8 @@ If a rule should apply across multiple repositories, promote it into the guide p
 - Test: `just test`
 - Lint: `just lint`
 - Typecheck: `just typecheck`
-- Validation: `just check`; `just sandbox-integration` additionally exercises PostgreSQL, sandbox,
+- Validation: `just check` includes mocked infrastructure tests and validation after `just install`;
+  `just sandbox-integration` additionally exercises PostgreSQL, sandbox,
   and notification-loss recovery against an empty disposable `p3_relay_test` database.
 - Run one test: `go test ./cmd/api -run TestName` or
   `pnpm --dir web test -- --run src/App.test.tsx`

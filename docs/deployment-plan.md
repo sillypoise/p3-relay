@@ -10,30 +10,47 @@ Status: Phase 7 in progress. No infrastructure has been provisioned.
 - Configured region: `us-east-1`.
 - Operator budget ceiling: USD 50/month for AWS; minimize spend rather than spending to the limit.
 - PostgreSQL remains on shared Railway, with every Relay object in `p3_relay`. No RDS instance.
-- Public hostname is still undecided. A hostname means an address such as `relay.example.com` under
-  a domain owned by the operator; it is needed for DNS, HTTPS, and the sandbox's exact Origin check.
+- The operator approved a temporary provider-generated HTTPS address; no domain purchase or custom
+  DNS is required for this phase. The sandbox still needs an exact configured HTTPS Origin.
 
-## Candidate topology, not yet approved for apply
+## Runtime decision, not yet implemented or applied
 
-Prefer one small ECS Fargate task with separate API and worker containers, using the same image.
-Serve compiled frontend assets from the Go API so the browser and API share one HTTPS origin.
-Use an HTTPS load balancer, SQS with a notification DLQ, narrowly scoped task roles, and short log
-retention. Avoid RDS, NAT gateways, a separate frontend service, and autoscaling for this demo.
+Prefer ECS Express Mode: it supplies a generated HTTPS URL, TLS load balancer, and Fargate service.
+Use one 0.25-vCPU/512-MiB task with separate API and worker containers sharing the image; serve the
+frontend from the API. Set both minimum and maximum task counts to one. Avoid RDS, NAT gateways,
+a separate frontend service, and extra steady-state tasks. Measure memory before approving the size.
 
-Tradeoff: sharing a task lowers baseline cost but couples API/worker restarts and resource capacity.
-PostgreSQL leases recover unfinished delivery work after restart. Two independent ECS services
-remain an alternative only if the reviewed estimate leaves adequate budget headroom.
+Confidence: medium for the overall fit; generated HTTPS and custom task definitions are documented,
+but runtime capacity, networking, IAM, database TLS, and the full cost envelope remain unverified.
+Sharing a task reduces baseline cost but couples restarts, capacity, and the task's IAM permissions.
+PostgreSQL leases recover interrupted work. Rollouts may briefly run an additional task.
 
-Cost verification is pending: the AWS Pricing endpoint timed out, including a bounded retry with
-one attempt and explicit connection/read timeouts. Do not treat the candidate topology as a current
-AWS quote or guarantee it fits the budget. Prepare a regional estimate with headroom for IPv4,
-load-balancer usage, logs, images, secrets, SQS, and transfer before any apply. Budget alerts do not
-constitute a hard billing cap; variable usage and taxes may affect the final bill.
+App Runner was considered and rejected: AWS stopped accepting new customers on April 30, 2026 and
+recommends ECS Express Mode instead. Two ordinary ECS services would leave insufficient headroom at
+the estimated baseline; an ordinary ALB alone does not supply our required trusted HTTPS hostname.
 
-OpenTofu must define project-owned resources and produce a reviewed plan before apply. Runtime
-secrets must be referenced from controlled secret storage, never baked into images or stored in
-OpenTofu variables/state. State storage, IAM, HTTPS, database TLS, rollback, and teardown still need
-implementation and verification after hostname and cost decisions.
+The ECS API and CloudFormation support a custom task definition with sidecars (primary container
+named `Main`). AWS provider 6.63.0 does not expose that property on its native Express resource.
+Narrow admission: use a single-resource CloudFormation stack managed by OpenTofu for that resource,
+rather than adding a process supervisor or another provider. This wrapper is not implemented yet.
+Owner: repository maintainer; revisit when the native provider supports `taskDefinitionArn`.
+
+See [cost estimate](cost-estimate.md) for verified regional rates and assumptions. The modeled base
+is USD 36.39/month; one average load-balancer capacity unit brings it to USD 42.23 **before** other
+usage charges and taxes. Budget alerts are not hard caps. Full cost review remains an apply gate.
+
+## Infrastructure preparation
+
+[Infrastructure foundations](../infra/README.md) now define encrypted state storage, immutable image
+releases, source-restricted encrypted SQS/DLQ, bounded log retention, and secret metadata only.
+Five mocked tests pass, covering valid, invalid, and security boundary paths. These are not live
+IAM, queue, redrive, or deployment evidence.
+
+A live state-bootstrap plan was generated: five additions, zero changes, zero deletions. Nothing
+was applied. The regional STS endpoint timed out; AWS's official global STS endpoint worked with
+certificate verification unchanged. The scoped workaround and teardown protections are documented
+in the infrastructure README. Runtime wiring, secrets, migrations, budget notifications, and live
+failure/recovery verification remain open.
 
 ## Container packaging
 

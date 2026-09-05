@@ -127,4 +127,22 @@ provisioning, IAM enforcement, redrive verification, and measured operations rem
 Validation: `just check` passed, covering missing builds, traversal, symlinks, and API routing.
 A native production-bundle smoke test verified HTML, JavaScript, deep links, CSP, and denied API
 access. OCI build verification remains blocked by Docker Hub TLS timeouts;
-current-price lookup also timed out. Cost approval, DNS/HTTPS, OpenTofu, and deployment remain open.
+current-price lookup initially timed out. Deployment remains open.
+
+### Infrastructure foundations follow-up
+
+- The operator approved a generated HTTPS hostname, without buying a domain. Selected ECS Express
+  Mode for further runtime work; App Runner's current notice closes it to new customers.
+- Retrieved regional price catalogs: modeled baseline USD 36.39/month, or USD 42.23 with one average
+  ALB capacity unit, before other usage and taxes. Full cost approval remains pending.
+- Added OpenTofu 1.11/AWS provider 6.63 foundations: protected encrypted state, immutable ECR,
+  encrypted SQS/DLQ with source-only redrive, short log retention, and secret metadata.
+- Added canonical infrastructure recipes, committed provider locks, and five mocked tests. Updated
+  `just install` and `just check` so infrastructure validation is part of the normal workflow.
+- Generated a live bootstrap plan: five additions, no changes/deletions; did not apply. Regional STS
+  timed out; AWS's global STS endpoint worked through the approved wrapper with TLS checks intact.
+
+Validation: `just check` passed, including five mocked infrastructure tests. A simulated mock-cleanup
+failure was correctly rejected by the recipe. Mocked tests do not prove
+live IAM or queue behavior. Docker Hub and public ECR pulls still timed out. Runtime/IAM/networking
+configuration, secret setup, migrations, budget alerts, apply, and live recovery proof remain open.
