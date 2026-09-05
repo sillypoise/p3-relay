@@ -17,11 +17,22 @@ func (store *Store) Claim(context_value context.Context, now time.Time, lease ti
 		return nil, fmt.Errorf("create claim identifier: %w", error_value)
 	}
 	const query = `
-		WITH candidate AS (
+		WITH expired AS (
+            SELECT id FROM p3_relay.events
+            WHERE created_at <= $1::timestamptz - interval '24 hours'
+            AND (state IN ('pending','retry_scheduled')
+                OR (state='delivering' AND lease_expires_at <= $1))
+            ORDER BY created_at LIMIT 10 FOR UPDATE SKIP LOCKED
+        ), retired AS (
+            UPDATE p3_relay.events SET state='dead_lettered',
+                lease_expires_at=NULL,claim_id=NULL
+            WHERE id IN (SELECT id FROM expired)
+        ), candidate AS (
 			SELECT id, state FROM p3_relay.events
 			WHERE ((
 				state IN ('pending', 'retry_scheduled') AND next_attempt_at <= $1
 			) OR (state = 'delivering' AND lease_expires_at <= $1))
+            AND created_at > $1::timestamptz - interval '24 hours'
             AND (sandbox_id IS NULL OR EXISTS (
                 SELECT FROM p3_relay.sandbox_sessions s
                 WHERE s.id=sandbox_id AND s.expires_at>$1))

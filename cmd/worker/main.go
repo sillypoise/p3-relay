@@ -10,8 +10,11 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sillypoise/p3-relay/internal/delivery"
 	"github.com/sillypoise/p3-relay/internal/netguard"
+	"github.com/sillypoise/p3-relay/internal/notification"
 	"github.com/sillypoise/p3-relay/internal/postgres"
 	"github.com/sillypoise/p3-relay/internal/sandbox"
+	"os/signal"
+	"syscall"
 )
 
 const (
@@ -40,34 +43,53 @@ func main() {
 	}
 	defer pool.Close()
 
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	queue, err := notification.Open(ctx, os.Getenv("RELAY_SQS_QUEUE_URL"), os.Getenv("RELAY_SQS_REGION"))
+	if err != nil {
+		slog.Error("notification queue startup validation failed")
+		os.Exit(1)
+	}
+	var consumer notification.Consumer
+	if queue != nil {
+		consumer = queue
+	}
 	allow_private := os.Getenv("RELAY_ALLOW_PRIVATE_DESTINATIONS") == "true"
 	worker := delivery.NewWorker(
 		postgres.NewStore(pool),
 		delivery.NewHTTPSender(new_http_client(allow_private), []byte(delivery_secret), allow_private),
 		lease_length,
 	)
+	main_cycles(ctx, pool, worker, consumer)
+}
+
+func main_cycles(ctx context.Context, pool *pgxpool.Pool, worker *delivery.Worker, consumer notification.Consumer) {
 	ticker := time.NewTicker(poll_interval)
 	defer ticker.Stop()
 	nextCleanup := time.Now()
-	for now := range ticker.C {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+		}
+		// Long polls may leave an old ticker timestamp; housekeeping uses the current clock.
+		now := time.Now()
 		if now.Before(nextCleanup) == false {
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			err := (&sandbox.Store{Pool: pool}).Cleanup(ctx)
+			cleanupContext, cancel := context.WithTimeout(ctx, 5*time.Second)
+			err := (&sandbox.Store{Pool: pool}).Cleanup(cleanupContext)
 			cancel()
 			if err != nil {
 				slog.Error("sandbox cleanup failed")
 			}
 			nextCleanup = now.Add(time.Minute)
 		}
-		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
-		processed, run_error := worker.RunOnce(ctx, now)
+		cycleContext, cancel := context.WithTimeout(ctx, 220*time.Second)
+		run_error := notification.Cycle(cycleContext, worker, consumer)
 		cancel()
 		if run_error != nil {
-			slog.Error("delivery cycle failed", "error", run_error)
+			slog.Error("delivery cycle failed; database reconciliation will retry")
 			continue
-		}
-		if processed {
-			slog.Info("delivery cycle completed")
 		}
 	}
 }

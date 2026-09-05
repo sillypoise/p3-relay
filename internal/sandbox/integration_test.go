@@ -193,6 +193,7 @@ func TestSandboxIntegration(t *testing.T) {
 	if err != nil || detail.State != "delivered" || len(detail.Attempts) != 3 {
 		t.Fatalf("retry completion: %v", err)
 	}
+	verifyNotificationFailures(t, ctx, pool, store, reads, worker, idA)
 	// Concurrent admissions share one transactionally enforced per-session quota.
 	var admitted atomic.Int32
 	var group sync.WaitGroup

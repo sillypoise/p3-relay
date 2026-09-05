@@ -50,7 +50,8 @@ PostgreSQL transactions serialize admission across replicas:
 - Clearing cookies never resets the global budget. There is no public reset operation.
 - Expired sessions cannot access their resources, and their events are excluded from worker claims.
 - Cleanup deletes attempts, events, then empty sessions in batches of at most 100 events, skipping
-  active leases. It runs before new session admission and every minute in the worker.
+  active leases. It runs before new session admission; the worker checks its one-minute schedule
+  between bounded delivery cycles.
 - Hourly quota counters survive cleanup. A missing counter row fails closed.
 - Requests have a five-second database deadline; failed transactions do not consume partial quotas.
 

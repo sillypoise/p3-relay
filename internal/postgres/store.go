@@ -9,10 +9,12 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sillypoise/p3-relay/internal/event"
+	"github.com/sillypoise/p3-relay/internal/notification"
 )
 
 type Store struct {
-	pool *pgxpool.Pool
+	pool          *pgxpool.Pool
+	Notifications notification.Publisher
 }
 
 func NewStore(pool *pgxpool.Pool) *Store {
@@ -44,6 +46,7 @@ func (store *Store) Accept(context_value context.Context, receipt *event.Receipt
 		receipt.DestinationURL,
 	).Scan(&accepted_id)
 	if error_value == nil {
+		notification.AfterCommit(context_value, store.Notifications, accepted_id)
 		return event.Accepted{ID: accepted_id, Duplicate: false}, nil
 	}
 	if !errors.Is(error_value, pgx.ErrNoRows) {

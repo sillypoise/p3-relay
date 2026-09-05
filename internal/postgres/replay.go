@@ -7,6 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/sillypoise/p3-relay/internal/event"
+	"github.com/sillypoise/p3-relay/internal/notification"
 )
 
 func (store *Store) Replay(context_value context.Context, event_id string, source_key string) error {
@@ -22,6 +23,7 @@ func (store *Store) Replay(context_value context.Context, event_id string, sourc
 		return fmt.Errorf("replay dead-lettered event: %w", error_value)
 	}
 	if command.RowsAffected() == 1 {
+		notification.AfterCommit(context_value, store.Notifications, event_id)
 		return nil
 	}
 

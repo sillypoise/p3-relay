@@ -138,6 +138,7 @@ Allowed automatic transitions are:
 
 ```text
 pending → delivering
+pending → dead_lettered (automatic-delivery age expired)
 delivering → delivered
 delivering → retry_scheduled
 retry_scheduled → delivering
@@ -147,13 +148,16 @@ retry_scheduled → dead_lettered
 
 An authorized replay creates `dead_lettered → pending`, resets the automatic-attempt budget, and
 preserves previous attempt history. An event permits at most 16 replays. Replay is rejected for all
-other states and after replay exhaustion. State claims have a
+other states and after replay exhaustion. Replay does not reset the 24-hour automatic-delivery
+window; expired events are retired without a new delivery attempt. State claims have a
 30-second lease; recovery after an expired lease must preserve the eight-attempt bound and may
 produce a duplicate network request. Database transitions must use compare-and-set conditions so a
 stale worker cannot overwrite newer state.
 
 SQS integration must assume duplicate and out-of-order messages. A queue message is only a prompt to
-claim current PostgreSQL state; it grants no authority to force a transition.
+claim current PostgreSQL state; it grants no authority to force a transition. The additive
+[notification contract](./notification-contract.md) defines publication, acknowledgement, failure
+reconciliation, and transport-DLQ semantics.
 
 ## Authorization contract
 

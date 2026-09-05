@@ -11,13 +11,17 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sillypoise/p3-relay/internal/identifier"
+	"github.com/sillypoise/p3-relay/internal/notification"
 )
 
 var ErrQuota = errors.New("sandbox quota exceeded")
 var ErrMissing = errors.New("sandbox event missing")
 var ErrState = errors.New("sandbox event cannot be replayed")
 
-type Store struct{ Pool *pgxpool.Pool }
+type Store struct {
+	Pool          *pgxpool.Pool
+	Notifications notification.Publisher
+}
 
 func rollback(ctx context.Context, tx pgx.Tx) {
 	if err := tx.Rollback(ctx); err != nil && err != pgx.ErrTxClosed {
@@ -127,7 +131,11 @@ func (store *Store) Submit(ctx context.Context, session string, scenario string)
 	if err != nil {
 		return "", err
 	}
-	return id, tx.Commit(ctx)
+	if err = tx.Commit(ctx); err != nil {
+		return "", err
+	}
+	notification.AfterCommit(ctx, store.Notifications, id)
+	return id, nil
 }
 
 func charge(ctx context.Context, tx pgx.Tx) error {
@@ -174,7 +182,11 @@ func (store *Store) Replay(ctx context.Context, session string, id string) error
 	if err != nil {
 		return err
 	}
-	return tx.Commit(ctx)
+	if err = tx.Commit(ctx); err != nil {
+		return err
+	}
+	notification.AfterCommit(ctx, store.Notifications, id)
+	return nil
 }
 
 func ValidScenario(value string) bool {

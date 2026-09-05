@@ -15,12 +15,16 @@ views. Phase 5 adds an isolated visitor sandbox with signed expiring cookies, tr
 controlled worker simulations, replay, and bounded cleanup. Visitor routes are disabled by default;
 see the sandbox contract for HTTPS configuration and rollout requirements.
 
+Phase 6 adds optional SQS notifications with PostgreSQL reconciliation for lost or duplicated hints.
+Application integration is tested locally; live AWS provisioning and verification remain Phase 7.
+
 ## Documentation
 
 - [Product brief](docs/product-brief.md)
 - [Delivery contract](docs/delivery-contract.md)
 - [Dashboard contract](docs/dashboard-contract.md)
 - [Sandbox contract](docs/sandbox-contract.md)
+- [SQS notification contract](docs/notification-contract.md)
 - [Phase log](docs/phase-log.md)
 
 ## Planned stack
@@ -28,7 +32,7 @@ see the sandbox contract for HTTPS configuration and rollout requirements.
 - Go API and delivery worker
 - React, TypeScript, and TanStack
 - PostgreSQL
-- AWS SQS and ECS after the local delivery flow is proven
+- Optional AWS SQS notifications; ECS deployment remains planned
 - OpenTofu for project-owned infrastructure
 - Podman for local OCI container workflows
 

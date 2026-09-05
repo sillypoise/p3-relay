@@ -12,6 +12,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sillypoise/p3-relay/internal/httpapi"
+	"github.com/sillypoise/p3-relay/internal/notification"
 	"github.com/sillypoise/p3-relay/internal/postgres"
 	"github.com/sillypoise/p3-relay/internal/sandbox"
 )
@@ -41,26 +42,12 @@ func main() {
 	}
 	defer pool.Close()
 
-	store := postgres.NewStore(pool)
-	event_api := httpapi.New(
-		store,
-		configuration.source_key,
-		[]byte(configuration.ingress_secret),
-		configuration.destination_url,
-		[]byte(configuration.operator_token),
-	)
-	routes := http.NewServeMux()
-	routes.Handle("/v1/", event_api.Handler())
-	if origin := os.Getenv("RELAY_SANDBOX_ORIGIN"); origin != "" {
-		key, err := hex.DecodeString(os.Getenv("RELAY_SANDBOX_KEY"))
-		visitor := &sandbox.Handler{Store: &sandbox.Store{Pool: pool}, Reads: store, Key: key, Origin: origin}
-		if err != nil || visitor.Valid() == false {
-			slog.Error("invalid sandbox configuration")
-			os.Exit(1)
-		}
-		routes.Handle("/v1/sandbox/", visitor)
+	queue, err := notification.Open(context.Background(), os.Getenv("RELAY_SQS_QUEUE_URL"), os.Getenv("RELAY_SQS_REGION"))
+	if err != nil {
+		slog.Error("notification queue startup validation failed")
+		os.Exit(1)
 	}
-	server := new_server(configuration.address, new_handler(routes))
+	server := new_server(configuration.address, new_handler(main_routes(&configuration, pool, queue)))
 
 	slog.Info("starting Relay API", "address", configuration.address)
 	error_value = server.ListenAndServe()
@@ -71,6 +58,28 @@ func main() {
 		slog.Error("Relay API stopped", "error", error_value)
 		os.Exit(1)
 	}
+}
+
+func main_routes(value *configuration, pool *pgxpool.Pool, queue *notification.Queue) http.Handler {
+	store := postgres.NewStore(pool)
+	if queue != nil {
+		store.Notifications = queue
+	}
+	eventAPI := httpapi.New(store, value.source_key, []byte(value.ingress_secret),
+		value.destination_url, []byte(value.operator_token))
+	routes := http.NewServeMux()
+	routes.Handle("/v1/", eventAPI.Handler())
+	if origin := os.Getenv("RELAY_SANDBOX_ORIGIN"); origin != "" {
+		key, err := hex.DecodeString(os.Getenv("RELAY_SANDBOX_KEY"))
+		visitor := &sandbox.Handler{Store: &sandbox.Store{Pool: pool, Notifications: store.Notifications},
+			Reads: store, Key: key, Origin: origin}
+		if err != nil || visitor.Valid() == false {
+			slog.Error("invalid sandbox configuration")
+			os.Exit(1)
+		}
+		routes.Handle("/v1/sandbox/", visitor)
+	}
+	return routes
 }
 
 type configuration struct {

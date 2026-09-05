@@ -47,8 +47,8 @@ If a rule should apply across multiple repositories, promote it into the guide p
   for PostgreSQL; HCL for OpenTofu.
 - Key directories: `cmd/` contains Go entry points, `web/` contains the React application, `docs/`
   contains product and delivery contracts, and future `infra/` will contain OpenTofu.
-- Architectural constraints: PostgreSQL is authoritative. AWS SQS will notify workers after the
-  local PostgreSQL-backed flow is proven. Database objects must live in the `p3_relay` schema
+- Architectural constraints: PostgreSQL is authoritative. Optional AWS SQS hints prompt bounded
+  database reconciliation; queue messages never authorize delivery. Objects live in `p3_relay`
   because the Railway PostgreSQL instance is shared with other portfolio projects.
 <!-- END REPO CONTEXT -->
 
@@ -59,7 +59,8 @@ If a rule should apply across multiple repositories, promote it into the guide p
 - Test: `just test`
 - Lint: `just lint`
 - Typecheck: `just typecheck`
-- Validation: `just check`
+- Validation: `just check`; `just sandbox-integration` additionally exercises PostgreSQL, sandbox,
+  and notification-loss recovery against an empty disposable `p3_relay_test` database.
 - Run one test: `go test ./cmd/api -run TestName` or
   `pnpm --dir web test -- --run src/App.test.tsx`
 

@@ -92,3 +92,24 @@ UI tests passed at 390×844 and 1440×900 using explicitly mocked API fixtures.
 
 Deployment remains pending. No shared Railway resources were modified; public routes remain
 disabled unless the operator supplies an HTTPS origin and a separate sandbox signing key.
+
+## Phase 6 — SQS notification integration
+
+- Added a pinned AWS SDK adapter with minimal versioned messages, bounded publication, long polling,
+  batched acknowledgement, startup queue-policy checks, and sanitized failure events.
+- Added post-commit notifications to operator and sandbox receipt/replay. Publication failure does
+  not change durable acceptance; PostgreSQL reconciliation recovers lost hints without an outbox.
+- Kept database state authoritative for duplicates, reordered/stale hints, retries, and leases.
+  Malformed notifications remain eligible for SQS redrive, not delivery replay.
+- Added bounded worker reconciliation, cancellation, and retirement of events at the existing
+  24-hour automatic-delivery boundary.
+- Documented queue/DLQ requirements, least-privilege IAM, enablement, rollback, limits, and the
+  deliberate polling tradeoff in `docs/notification-contract.md`.
+
+Validation: `just check` and `just sandbox-integration` passed with race detection. Tests exercise
+real SDK serialization/signing against a local server, queue/envelope rejection, duplicate hints,
+receive/partial-delete failures, post-commit publication visibility, notification-loss recovery,
+idempotent receipt, replay, and exact delivery-age expiry against isolated PostgreSQL 17.
+
+Application integration is complete. No live AWS calls or resource changes were made. Queue/DLQ
+provisioning, IAM enforcement, redrive verification, and measured operations remain Phase 7.
