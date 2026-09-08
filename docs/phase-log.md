@@ -163,3 +163,36 @@ configuration, secret setup, migrations, budget alerts, apply, and live recovery
 Remaining: restore AWS/registry connectivity, validate the OCI image and memory sizing, finish the
 Express service/control-plane IAM and network configuration, configure secrets/budget alerts, then
 review plans, apply, migrate, and verify live failure/recovery paths.
+
+### AWS foundation applied and OCI verified
+
+- Regional STS and registry connectivity recovered; no endpoint or TLS bypass was needed.
+- Reviewed and applied the five-resource state bootstrap. An S3 versioning conflict caused partial
+  failure; a fresh plan identified only the missing step, and its follow-up apply succeeded.
+- Connected the main S3 backend and applied 16 foundation resources with no changes/deletions.
+  A subsequent drift plan reported no changes. No ECS service, compute, or Railway changes occurred.
+- Verified actual state encryption/versioning/public-access blocks and anonymous HTTP 403 denial.
+  Verified live source/DLQ attributes, TLS-denial policies, and 14 IAM simulation decisions.
+- `just container-build` and an API container smoke passed: non-root, read-only, dropped capabilities,
+  packaged files, missing-config rejection, static routes, and denied operator access.
+- `just check` passed with 16 mocked infrastructure tests. The image is not published yet, and the
+  smoke used synthetic configuration without a working database; no full capacity claim is made.
+
+See `docs/deployment-verification.md` for scope and limitations. Remaining: image publication/scan,
+Express service/network/control-plane IAM, database TLS/roles, secrets, migrations, budget alerts
+and complete cost review, generated HTTPS, and live delivery/retry/redrive/recovery.
+
+### Express Mode configuration and publication workflow
+
+- Confirmed custom task-definition support in AWS's live CloudFormation resource schema.
+- Added dedicated two-AZ public networking, outbound-only migration access, a Fargate cluster,
+  scoped CloudFormation control-plane permissions, and AWS's Express infrastructure role.
+- Implemented the one-resource service stack behind `deploy_service=false`, with exactly one
+  steady-state task, explicit health checks, and bounded rollback/wait settings.
+- Reviewed a live preparation plan: 14 additions, zero changes/deletions, no service or compute.
+  Did not apply: `AWSServiceRoleForECS` is absent and account-level bootstrap needs confirmation.
+- Added a clean-revision ECR publication recipe with account checks and ephemeral registry login.
+- Nineteen mocked infrastructure tests pass, including the disabled service and missing-image gates.
+
+Remaining inputs: approval for standard AWS service-linked roles and a budget alert destination.
+Secret/database/migration checks and live service verification still precede activation.

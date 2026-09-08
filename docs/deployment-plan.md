@@ -1,7 +1,7 @@
 # Deployment preparation
 
 Owner: Relay repository maintainer.
-Status: Phase 7 in progress. No infrastructure has been provisioned.
+Status: Phase 7 in progress. Infrastructure foundations are applied; no public application runs yet.
 
 ## Confirmed constraints
 
@@ -32,7 +32,8 @@ the estimated baseline; an ordinary ALB alone does not supply our required trust
 The ECS API and CloudFormation support a custom task definition with sidecars (primary container
 named `Main`). AWS provider 6.63.0 does not expose that property on its native Express resource.
 Narrow admission: use a single-resource CloudFormation stack managed by OpenTofu for that resource,
-rather than adding a process supervisor or another provider. This wrapper is not implemented yet.
+rather than adding a process supervisor or another provider. The wrapper is now implemented but
+not applied; AWS's live CloudFormation schema confirms custom task-definition support.
 Owner: repository maintainer; revisit when the native provider supports `taskDefinitionArn`.
 
 See [cost estimate](cost-estimate.md) for verified regional rates and assumptions. The modeled base
@@ -44,15 +45,20 @@ usage charges and taxes. Budget alerts are not hard caps. Full cost review remai
 [Infrastructure foundations](../infra/README.md) define encrypted state storage, immutable image
 releases, encrypted SQS/DLQ, scoped IAM roles, bounded logs, and separate runtime/migration
 secret metadata. Digest-gated runtime and migration task definitions are implemented; no ECS service
-or running tasks are created. Sixteen mocked tests pass, covering invalid and boundary paths.
-These are not live IAM, queue, redrive, or deployment evidence.
+or running tasks were created. Nineteen mocked tests now pass, covering invalid and boundary paths.
 
-A live state-bootstrap plan was generated: five additions, zero changes, zero deletions. Nothing
-was applied. The regional STS endpoint timed out; AWS's official global STS endpoint worked with
-certificate verification unchanged. On the latest retry both endpoints timed out, so no apply was
-attempted. A new successful plan is required. The workaround and teardown protections are documented
-in the infrastructure README. Express service/control-plane IAM, networking, secrets, migrations,
-budget notifications, capacity measurement, and live failure/recovery verification remain open.
+Regional connectivity recovered. Reviewed and applied the five-resource state bootstrap and the
+16-resource foundation plan, with no changes/deletions to existing resources. A transient S3
+versioning conflict recovered through a fresh plan and a one-resource follow-up apply. Main state
+now uses encrypted, versioned S3 storage and native locking; a drift plan reports no changes.
+
+Live checks verified state protection, anonymous state denial, queue/DLQ attributes and policies,
+and 14 resource-specific IAM simulation decisions. These do not prove ECS runtime enforcement or
+actual redrive. See [verification scope](deployment-verification.md). Express service/control-plane
+IAM and networking are now defined; their reviewed preparation plan has 14 additions and no compute.
+It remains unapplied: the missing account-level ECS service-linked role needs bootstrap approval.
+Secrets, migrations, budget alerts, capacity measurement, and live recovery remain open.
+No Railway objects have been changed.
 
 ## Container packaging
 
@@ -77,6 +83,7 @@ The API serves GET/HEAD for `/`, `/events`, `/endpoint`, UUID event detail route
 and traversal/symlink escapes cannot read outside the opened web root. HTML uses `no-store` and a
 same-origin Content Security Policy. API routes and authorization remain separate from SPA routing.
 
-Validation: `just check` and a native smoke test against the production frontend build passed,
-including deep links, JavaScript assets, security headers, and unauthorized API rejection. Full OCI
-build verification is pending because Docker Hub timed out while pulling the Node base image.
+Validation: `just check`, the full OCI build, and a read-only/non-root container smoke test passed.
+The smoke verified packaged files, missing-configuration rejection, static routes, security headers,
+and API authorization denial. It used synthetic configuration without a working database, so full
+API/worker capacity and delivery still require verification.

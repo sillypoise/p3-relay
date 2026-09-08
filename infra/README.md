@@ -1,7 +1,7 @@
 # Relay infrastructure foundations
 
-Status: prepared and locally tested; not applied. These configurations do not yet deploy the API
-or worker. See [deployment preparation](../docs/deployment-plan.md) for runtime decisions and cost.
+Status: state bootstrap and 16 foundation resources applied. No API/worker service is running.
+See [deployment preparation](../docs/deployment-plan.md) for runtime decisions and cost.
 
 ## Ownership and boundaries
 
@@ -22,7 +22,7 @@ just infrastructure-validate
 just infrastructure-test
 ```
 
-The 16 tests use mocked providers: they make no AWS calls. They check queue bounds, encryption,
+The 19 tests use mocked providers: they make no AWS calls. They check queue bounds, encryption,
 redrive, state protection, IAM scope, and invalid account/image/origin inputs.
 `just check` includes these checks;
 `just install` initializes providers without contacting an AWS state backend.
@@ -43,19 +43,12 @@ aws-run sp just infrastructure-bootstrap-apply
 Review the saved plan before confirming apply. The observed initial plan contains five additions:
 S3 bucket, public-access block, encryption, versioning, and TLS-only bucket policy; zero changes and
 zero deletions. The bucket has `prevent_destroy` and does not allow forced deletion of its contents.
-The plan has **not** been applied. The latest refresh failed because both regional and global STS
-endpoints timed out. Regenerate and review a successful plan before apply; do not reuse old plans.
+The bootstrap is now applied. A transient S3 versioning conflict was recovered by refreshing the
+plan and applying only the missing configuration. Do not replace or destroy a bucket to recover
+from `OperationAborted`; inspect state and review a new plan first.
 
-The regional STS endpoint timed out during local planning. This process-scoped workaround succeeded:
-
-```sh
-aws-run sp env AWS_ENDPOINT_URL_STS=https://sts.amazonaws.com just infrastructure-bootstrap-plan
-```
-
-It uses AWS's official global STS endpoint, preserves TLS certificate verification, and does not
-change deployment region or credentials. Owner: repository maintainer. Retry the regional default
-at the next deployment session; remove this workaround when connectivity recovers. Do not disable
-TLS checks or credential/account validation. No TLS algorithm override is retained.
+Regional STS and container registry connectivity have recovered. Use normal regional endpoints;
+the temporary global STS workaround is no longer needed. TLS and account validation remain enabled.
 
 Bootstrap state stays local, ignored by Git, and is created with owner-only file permissions. Keep
 it in controlled storage: losing it requires deliberate import of existing state-bucket resources,
@@ -63,16 +56,16 @@ not creating replacements. It contains infrastructure metadata, never applicatio
 
 ## Main infrastructure plan
 
-After the reviewed bootstrap is applied:
+For a new checkout connecting to the existing, reviewed state bucket:
 
 1. Copy `backend.hcl.example` to `backend.hcl`; set the created bucket name. Never add credentials.
 2. Run `aws-run sp just infrastructure-connect` to initialize encrypted S3 state and native locking.
 3. Run `aws-run sp just infrastructure-plan`; review `relay.tfplan` before confirming apply.
 4. Run `aws-run sp just infrastructure-apply` only for the reviewed plan.
 
-Use the scoped STS override if the regional endpoint is still unreachable. Never run concurrent
-applies. Main state uses S3 locking and versioning; bucket access denies non-TLS transport. State,
-local configuration, and saved plans are ignored by Git and excluded from container build inputs.
+The main foundation apply succeeded, and its follow-up plan reported no changes. Never run
+concurrent applies. Main state uses S3 locking and versioning; bucket access denies non-TLS transport.
+State, local configuration, and saved plans are ignored by Git and excluded from container inputs.
 
 ## Task registration and credential separation
 
@@ -80,8 +73,9 @@ local configuration, and saved plans are ignored by Git and excluded from contai
 `sha256:` digest present in Relay's ECR repository. Task registration does not start compute.
 The shared runtime definition allocates 256 CPU units and 512 MiB total, split between `Main` (API)
 and `Worker`. Both are essential, non-root, read-only, and drop Linux capabilities. Capacity
-and actual image execution remain unverified. Log mode is explicitly blocking to avoid silent buffer
-loss; a CloudWatch outage can stall processes, so this availability tradeoff needs live testing.
+under load remains unverified. The OCI build and API-only startup/static-serving smoke passed;
+see [verification scope](../docs/deployment-verification.md). Logging is explicitly blocking to avoid
+silent buffer loss; a CloudWatch outage can stall processes. This tradeoff needs live testing.
 `sandbox_origin` defaults to empty and must later be
 the exact verified HTTPS hostname, without credentials, a path, or trailing slash.
 
@@ -102,6 +96,49 @@ Migration credentials must be restricted to Relay's schema operations. Verify da
 identity and encrypted transport before launching either task; task-definition tests do not verify
 opaque secret contents or PostgreSQL grants. No database roles or migrations have been applied here.
 
+## Image publication
+
+Commit and review a clean working tree, then run `aws-run sp just container-publish` from interactive
+Zsh. The recipe checks the account against the state-owned ECR repository, builds the committed
+revision with an OCI revision label, and publishes an immutable commit tag. It prints the resulting
+manifest digest. AWS environment credentials are never copied into the image or registry auth file.
+The generated ECR login credential is piped to Podman and kept only in a private temporary directory
+under `XDG_RUNTIME_DIR`, removed on exit. Do not enable shell tracing for this operation.
+
+If publication fails, inspect the immutable tag before retrying; a failed client request does not
+prove that nothing was uploaded. Never overwrite/delete a release just to make a retry succeed.
+Scan and review the published image before setting `runtime_image_digest`.
+
+## Express Mode preparation and activation
+
+The next preparation plan adds dedicated two-AZ public networking, an outbound-only migration
+security group, a Fargate cluster, and control-plane roles. It creates no NAT gateway or compute.
+The migration group permits outbound TCP because Railway assigns its proxy port; its destination
+and TLS identity must be validated before running migrations. No inbound migration rule exists.
+
+`deploy_service` defaults to false. Setting it true creates the single-resource CloudFormation stack
+and starts billable compute/load balancing, so do so only after secret, database, migration, image,
+and budget checks pass. Changing it back to false destroys the service: review that destructive plan
+explicitly. Data remains in PostgreSQL, but availability and the generated hostname may change.
+
+The live CloudFormation type schema confirms support for `TaskDefinitionArn`; the pinned native
+provider does not expose it. The stack sets minimum/maximum tasks to one and health checks to
+`/health`. It deliberately omits extra security groups: Express creates HTTPS load-balancer ingress
+and ALB-only ingress to the task. TLS terminates at the ALB; the last hop is HTTP within the private
+VPC address space, not end-to-end TLS. Inspect generated rules before declaring the demo ready.
+
+AWS's Express Mode defaults are documented in
+[created resources](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/express-service-work.html).
+The infrastructure role uses AWS's service-managed Express policy; the CloudFormation role is scoped
+to this service and its runtime roles. Trust-policy compatibility and live control-plane permissions
+still need validation. Service name, cluster, infrastructure role and service tags are create-only
+properties: changing them needs a replacement/cutover review, not an ordinary rolling-update claim.
+
+AWS service-linked roles may be created automatically. The account currently lacks
+`AWSServiceRoleForECS`; confirm this account-level bootstrap before applying the preparation plan.
+Do not delete shared service-linked roles during project teardown. Budget alert destination and
+full recurring-cost review remain activation gates.
+
 ## Secrets, rollout, rollback, and teardown
 
 Secret versions must be populated through a controlled secret-storage channel, not OpenTofu input
@@ -109,9 +146,9 @@ variables or command arguments. This step is not implemented yet. Owner: reposit
 track version metadata during rollout to detect drift without retrieving values into logs/state.
 No runtime should start until verified database TLS and runtime secret configuration are checked.
 
-Express Mode service/control-plane IAM and networking, migration execution, live health checks,
-budget alerts, and release/rollback automation remain pending. Tagged images are immutable and
-retained for rollback; only untagged image artifacts expire automatically. Review storage growth when releasing.
+Express/network/control-plane definitions are prepared but not applied. Migration execution,
+live health checks, budget alerts, and full release/rollback verification remain pending. Tagged images are immutable and
+retained for rollback; only untagged image artifacts expire automatically. Review storage on release.
 Task definition updates deregister replaced revisions: roll back by registering a new revision with
 an approved previous image digest, not by assuming a deregistered ARN can be deployed.
 

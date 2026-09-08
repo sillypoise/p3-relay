@@ -111,6 +111,30 @@ database-remove:
 container-build:
     podman build --tag localhost/p3-relay-api:development --file Containerfile .
 
+# Run through aws-run sp. Publish a clean Git revision, never persistent local AWS credentials.
+container-publish:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    git diff --quiet
+    git diff --cached --quiet
+    test -z "$(git ls-files --others --exclude-standard)"
+    revision=$(git rev-parse --verify HEAD)
+    repository=$(tofu -chdir=infra output -raw repository_url)
+    account=$(aws sts get-caller-identity --region us-east-1 --query Account --output text)
+    test "$repository" = "$account.dkr.ecr.us-east-1.amazonaws.com/p3-relay"
+    podman build --label "org.opencontainers.image.revision=$revision" \
+        --tag "$repository:$revision" --file Containerfile .
+    directory=$(mktemp --directory "${XDG_RUNTIME_DIR:?}/p3-relay-publish.XXXXXX")
+    trap 'rm --recursive --force "$directory"' EXIT
+    aws ecr get-login-password --region us-east-1 | podman login \
+        --authfile "$directory/auth.json" --username AWS --password-stdin "${repository%%/*}"
+    podman push --retry=1 --authfile "$directory/auth.json" \
+        --digestfile "$directory/digest" "$repository:$revision"
+    # Podman's digest file need not end with a newline.
+    digest=$(< "$directory/digest")
+    [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]
+    printf 'Published %s@%s from revision %s\n' "$repository" "$digest" "$revision"
+
 # Initialize providers for offline validation; no cloud resources or state bucket are created.
 infrastructure-init:
     tofu -chdir=infra init -backend=false -input=false

@@ -4,3 +4,5 @@ aws_account_id = "123456789012" # Replace with the account verified by the appro
 runtime_image_digest = ""
 # Enable only after verifying the generated HTTPS endpoint; no path or trailing slash.
 sandbox_origin = ""
+# Starts billable service resources only after all deployment gates pass.
+deploy_service = false

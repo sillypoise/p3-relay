@@ -1,7 +1,7 @@
 # SQS notification contract
 
 Owner: Relay repository maintainer.
-Status: Phase 6 application integration; live AWS resources and validation remain for Phase 7.
+Status: AWS queues deployed; application integration tested locally; ECS delivery verification pending.
 Version: notification envelope v1. Compatibility: additive; receipt responses remain unchanged.
 
 ## Authority and publication
@@ -130,6 +130,8 @@ Verified with `just check` and `just sandbox-integration`:
 - Real PostgreSQL delivery after lost hints, repeated reconciliation without duplicate terminal
   attempts, and exact delivery-age expiry.
 
-No live AWS commands were run. Queue deployment, IAM enforcement, redrive behavior, runtime key
-refresh, monitoring, and measured latency/cost remain Phase 7 verification items. Monitor sanitized
+Phase 6 verification was local. Phase 7 now has deployed queues, verified live attributes and
+resource policies, and source/DLQ IAM simulation results; see the
+[verification record](deployment-verification.md). Actual task-role enforcement, redrive behavior,
+credential refresh, monitoring, and measured latency/cost remain open. Monitor sanitized
 publish/receive/delete failures, rejected hints, DLQ depth, and overdue database work after rollout.
