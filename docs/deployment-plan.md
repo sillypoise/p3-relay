@@ -45,7 +45,8 @@ usage charges and taxes. Budget alerts are not hard caps. Full cost review remai
 [Infrastructure foundations](../infra/README.md) define encrypted state storage, immutable image
 releases, encrypted SQS/DLQ, scoped IAM roles, bounded logs, and separate runtime/migration
 secret metadata. Digest-gated runtime and migration task definitions are implemented; no ECS service
-or running tasks were created. Nineteen mocked tests now pass, covering invalid and boundary paths.
+or running tasks were created. Twenty-eight mocked tests now pass, including activation gates,
+invalid inputs, alert thresholds, and mailbox boundaries.
 
 Regional connectivity recovered. Reviewed and applied the five-resource state bootstrap and the
 16-resource foundation plan, with no changes/deletions to existing resources. A transient S3
@@ -55,9 +56,11 @@ now uses encrypted, versioned S3 storage and native locking; a drift plan report
 Live checks verified state protection, anonymous state denial, queue/DLQ attributes and policies,
 and 14 resource-specific IAM simulation decisions. These do not prove ECS runtime enforcement or
 actual redrive. See [verification scope](deployment-verification.md). Express service/control-plane
-IAM and networking are now defined; their reviewed preparation plan has 14 additions and no compute.
-It remains unapplied: the missing account-level ECS service-linked role needs bootstrap approval.
-Secrets, migrations, budget alerts, capacity measurement, and live recovery remain open.
+IAM and networking are applied with a $50 account-wide monthly budget: 15 additional resources,
+no compute. The operator approved shared service-linked-role bootstrap; ECS created its role.
+An EC2 throttling failure recovered through a fresh three-addition plan, not replacement or deletion.
+The final drift plan has no changes. Budget configuration is verified; inbox delivery is not.
+Secrets, migrations, full cost review, capacity measurement, and live recovery remain open.
 No Railway objects have been changed.
 
 ## Container packaging

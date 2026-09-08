@@ -72,6 +72,30 @@ from this replacement scan. This is not a claim that application code/dependenci
 vulnerabilities. Temporary registry-auth directories were confirmed removed after publication.
 Service activation remains blocked by the other deployment gates, not the resolved OS findings.
 
+## Approved preparation and budget verification
+
+After explicit operator approval, a fresh plan added 15 resources: project networking, an empty
+Fargate cluster, control-plane IAM, and one notification-only monthly budget. EC2 rejected one
+subnet creation with `503 RequestLimitExceeded`. A read confirmed only the other subnet existed;
+a refreshed plan added just the missing subnet and two route associations. Recovery succeeded,
+and the subsequent drift plan had no changes. No resources were replaced or deleted.
+
+Live AWS queries confirmed:
+
+- Both selected availability zones were available.
+- `AWSServiceRoleForECS` exists after automatic cluster bootstrap. AWS owns this shared role;
+  project teardown must retain it. ELB/autoscaling role creation is deferred until needed.
+- Cluster `p3-relay` is `ACTIVE`, with zero running/pending tasks and zero services.
+- Budget `p3-relay-aws-monthly-guardrail` is USD 50 monthly, with no cost filters.
+- Actual notifications have 70/90/100-percent thresholds; forecast notification has 100 percent.
+  All four reported `OK`; subscriber queries matched the supplied mailbox for every threshold.
+  This verifies configuration, not actual inbox delivery or a spending cap.
+
+The private recipient is excluded from Git and normal plan output. The ignored variable file has
+mode 0600; encrypted state and private saved plans contain the configured recipient. Tests use
+reserved addresses instead. The main state now owns 31 resources, separate from the five-resource
+state bootstrap and AWS-owned service-linked role.
+
 ## Repeating checks and remaining gates
 
 Use `just infrastructure-plan` through the approved AWS wrapper for drift checks. Review live
@@ -80,8 +104,7 @@ metadata using S3 `head-object`/`get-public-access-block`, SQS `get-queue-attrib
 secret values or state bodies into logs for these checks. Repeat `just container-build` and
 `just check` for code changes.
 
-Still pending: apply the prepared Express/network/control-plane configuration after account-level
-service-linked-role approval,
+Still pending: Express service activation,
 verified database TLS and scoped database roles, secret population, migrations, generated HTTPS
 origin, budget notification delivery, full cost review, measured capacity, real task-role behavior,
 actual SQS redrive, and live delivery/retry/recovery. No public demo is running yet.

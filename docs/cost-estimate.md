@@ -24,8 +24,10 @@ assumptions until the runtime plan and actual deployment are checked. ECS Expres
 additional service fee. Its underlying resources are charged normally.
 
 The remainder must cover SQS requests, CloudWatch logs/alarms, two Secrets Manager secrets, ECR,
-S3 state, transfer, one-off migrations, rollout overlap, and taxes. Their full estimate and budget notification destination are
-still pending. Keep a low-traffic target around $45 before taxes, but do not claim a $50 hard cap:
+S3 state, transfer, one-off migrations, rollout overlap, and taxes. Their full estimate remains
+pending. The operator supplied the private notification destination; the $50 monthly account-wide
+budget is deployed, alerting above $35/$45/$50 actual cost and $50 forecast cost. Inbox delivery is
+not verified. Keep a low-traffic target around $45 before taxes, but do not claim a $50 hard cap:
 traffic, retained images, address allocation, and rollout duration can increase the bill.
 
 Do not apply the runtime plan until it confirms one steady-state task, no NAT gateway, the intended

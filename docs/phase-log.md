@@ -208,3 +208,18 @@ Secret/database/migration checks and live service verification still precede act
   blocked. See the verification record for both digests and the scanner's limited scope.
 - Application activation still awaits account-level service-linked-role approval, budget alert
   configuration, database/secrets/migration checks, and live deployment verification.
+
+
+### Approved network bootstrap and budget alerts
+
+- The operator approved standard AWS service-linked-role creation and supplied a private alert
+  destination. Neither the address nor operator configuration is committed.
+- Reviewed and applied 15 additions: networking, empty Fargate cluster, control-plane roles, and
+  a $50 monthly account-wide notification budget. No existing resources were changed or deleted.
+- EC2 throttled one subnet creation. Confirmed the failed subnet was absent, reviewed a recovery
+  plan containing only that subnet and two route associations, and applied it successfully.
+- Verified an empty active cluster, automatic ECS service-linked-role creation, four budget
+  notification thresholds, and a final no-change drift plan. Inbox delivery remains unverified.
+- Added budget/activation checks covering valid configuration, disabled defaults, invalid mailboxes,
+  local-part boundaries, and the missing-budget error path. Full recurring-cost review and
+  database/secrets/migration checks still block public service activation.

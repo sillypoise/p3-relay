@@ -6,3 +6,5 @@ runtime_image_digest = ""
 sandbox_origin = ""
 # Starts billable service resources only after all deployment gates pass.
 deploy_service = false
+# Private operator mailbox goes only in ignored, owner-readable terraform.tfvars.
+budget_alert_email = ""

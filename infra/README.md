@@ -1,15 +1,17 @@
 # Relay infrastructure foundations
 
-Status: state bootstrap and 16 foundation resources applied. No API/worker service is running.
+Status: state bootstrap and 31 main resources applied, including networking and budget alerts.
+No API/worker service is running.
 See [deployment preparation](../docs/deployment-plan.md) for runtime decisions and cost.
 
 ## Ownership and boundaries
 
 - `bootstrap/` owns only Relay's private, encrypted, versioned S3 state bucket.
 - This directory owns the image registry, notification queue/DLQ, seven-day runtime log group,
-  runtime/migration secret **containers**, scoped IAM roles, and optional task definitions.
-  It creates no secret versions, ECS service, or running tasks.
-- All resources are project-owned and tagged `Project=p3-relay`. No Railway objects are changed.
+  runtime/migration secret **containers**, scoped IAM roles, networking, and budget notifications.
+  Task definitions and the Express service are explicitly gated. No secret versions are managed.
+- Project resources use `Project=p3-relay` where supported. AWS owns shared service-linked roles;
+  they are retained outside project teardown. No Railway objects are changed.
 - OpenTofu 1.11.x and AWS provider 6.63.0 are required. Both dependency locks are committed.
 - The provider checks the explicitly supplied account ID and uses `us-east-1`, with bounded retries.
 
@@ -22,7 +24,7 @@ just infrastructure-validate
 just infrastructure-test
 ```
 
-The 19 tests use mocked providers: they make no AWS calls. They check queue bounds, encryption,
+The 28 tests use mocked providers: they make no AWS calls. They check queue bounds, encryption,
 redrive, state protection, IAM scope, and invalid account/image/origin inputs.
 `just check` includes these checks;
 `just install` initializes providers without contacting an AWS state backend.
@@ -111,8 +113,8 @@ Scan and review the published image before setting `runtime_image_digest`.
 
 ## Express Mode preparation and activation
 
-The next preparation plan adds dedicated two-AZ public networking, an outbound-only migration
-security group, a Fargate cluster, and control-plane roles. It creates no NAT gateway or compute.
+The applied preparation plan adds dedicated two-AZ public networking, an outbound-only migration
+security group, a Fargate cluster, and control-plane roles. It created no NAT gateway or compute.
 The migration group permits outbound TCP because Railway assigns its proxy port; its destination
 and TLS identity must be validated before running migrations. No inbound migration rule exists.
 
@@ -134,10 +136,26 @@ to this service and its runtime roles. Trust-policy compatibility and live contr
 still need validation. Service name, cluster, infrastructure role and service tags are create-only
 properties: changing them needs a replacement/cutover review, not an ordinary rolling-update claim.
 
-AWS service-linked roles may be created automatically. The account currently lacks
-`AWSServiceRoleForECS`; confirm this account-level bootstrap before applying the preparation plan.
-Do not delete shared service-linked roles during project teardown. Budget alert destination and
-full recurring-cost review remain activation gates.
+The operator approved standard service-linked-role bootstrap. Cluster creation automatically
+created `AWSServiceRoleForECS`, verified through IAM. Other approved service-linked roles can be
+created when their services need them; do not provision unused roles preemptively or delete shared
+roles during project teardown. Full recurring-cost review remains an activation gate.
+
+## Budget alerts and private configuration
+
+`budget_alert_email` is a sensitive, optional ASCII mailbox input. Configure it only in the ignored,
+owner-readable `terraform.tfvars`, never in Git. The selected address is held in protected plans and
+encrypted state; the sensitive marker redacts output, not stored values. Mocked tests override the
+operator address with an empty value or reserved test addresses.
+
+The deployed `p3-relay-aws-monthly-guardrail` budget watches total account costs without tag filters,
+so Express-managed/untagged charges are not missed. It changes no existing budgets. It includes tax
+and support, excludes credits/refunds, and sends notifications above $35/$45/$50 actual monthly cost
+and forecast monthly cost above $50. Forecasts need sufficient billing history. These are alerts,
+not a hard cap or automatic shutdown; inbox delivery remains unverified.
+
+Compatibility delta: first service activation now requires a nonempty alert mailbox and successful
+budget creation. No service existed before this prerequisite; no running workload needs migration.
 
 ## Secrets, rollout, rollback, and teardown
 
@@ -146,8 +164,9 @@ variables or command arguments. This step is not implemented yet. Owner: reposit
 track version metadata during rollout to detect drift without retrieving values into logs/state.
 No runtime should start until verified database TLS and runtime secret configuration are checked.
 
-Express/network/control-plane definitions are prepared but not applied. Migration execution,
-live health checks, budget alerts, and full release/rollback verification remain pending. Tagged images are immutable and
+Network/control-plane preparation and budget alerts are applied; the Express service is not.
+Migration execution, live health checks, email delivery, and full release/rollback verification
+remain pending. Tagged images are immutable and
 retained for rollback; only untagged image artifacts expire automatically. Review storage on release.
 Task definition updates deregister replaced revisions: roll back by registering a new revision with
 an approved previous image digest, not by assuming a deregistered ARN can be deployed.

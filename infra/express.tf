@@ -130,6 +130,10 @@ resource "aws_cloudformation_stack" "runtime" {
   })
   lifecycle {
     precondition {
+      condition     = var.budget_alert_email != ""
+      error_message = "Configure the budget alert mailbox before enabling the service."
+    }
+    precondition {
       condition     = var.runtime_image_digest != ""
       error_message = "Verify and configure an immutable image before enabling the service."
     }
@@ -140,6 +144,7 @@ resource "aws_cloudformation_stack" "runtime" {
     delete = "40m"
   }
   depends_on = [
+    aws_budgets_budget.relay,
     aws_iam_role_policy.express_cloudformation,
     aws_iam_role_policy_attachment.express_infrastructure,
     aws_route_table_association.public,

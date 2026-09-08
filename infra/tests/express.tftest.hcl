@@ -39,6 +39,7 @@ run "reject_service_without_image" {
 run "explicit_service_gate" {
   command = apply
   variables {
+    budget_alert_email   = "alerts@example.invalid"
     deploy_service       = true
     runtime_image_digest = "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
   }
