@@ -46,6 +46,23 @@ container was stopped and removed. No real credentials were injected into it.
 `just check` passed, including 16 mocked infrastructure tests. These local tests remain separate
 from the live metadata checks above.
 
+## Image publication and security gate
+
+The clean revision `b0769d5` was published through `just container-publish`, using an ephemeral ECR
+login credential. Its manifest digest is:
+
+```text
+sha256:53297354f951f292b986f98a3ee5127df0445217f3fbe0c8bb695e57b5dae0aa
+```
+
+Release disposition: **blocked, never deployed**. ECR completed its scan with two critical, seven
+high, and one medium finding, all attributed to OpenSSL 3.5.7-r0. Critical identifiers were
+CVE-2026-75803 and CVE-2026-63073. These are inventory findings, not demonstrated application exploits.
+
+The runtime build now upgrades `libcrypto3` and `libssl3`; local verification found 3.5.8-r0. Release
+builds refresh base images and package-install layers rather than reusing stale security packages.
+The replacement image requires publication and a fresh scan before any activation.
+
 ## Repeating checks and remaining gates
 
 Use `just infrastructure-plan` through the approved AWS wrapper for drift checks. Review live
@@ -54,7 +71,8 @@ metadata using S3 `head-object`/`get-public-access-block`, SQS `get-queue-attrib
 secret values or state bodies into logs for these checks. Repeat `just container-build` and
 `just check` for code changes.
 
-Still pending: publish/scan the image, Express Mode service and networking/control-plane IAM,
+Still pending: approve a scanned replacement image, apply the prepared Express/network/control-plane
+configuration,
 verified database TLS and scoped database roles, secret population, migrations, generated HTTPS
 origin, budget notification delivery, full cost review, measured capacity, real task-role behavior,
 actual SQS redrive, and live delivery/retry/recovery. No public demo is running yet.

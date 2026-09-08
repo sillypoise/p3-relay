@@ -196,3 +196,12 @@ and complete cost review, generated HTTPS, and live delivery/retry/redrive/recov
 
 Remaining inputs: approval for standard AWS service-linked roles and a budget alert destination.
 Secret/database/migration checks and live service verification still precede activation.
+
+### Image security gate
+
+- Published revision `b0769d5` to ECR. Its scan reported two critical, seven high, and one medium
+  OpenSSL inventory finding. The image is blocked and has never been activated.
+- Updated the runtime libraries from OpenSSL 3.5.7-r0 to 3.5.8-r0, verified in the rebuilt image.
+  Release builds now refresh base images and avoid cached package-install layers.
+- Replacement publication and scan must succeed before any runtime activation. See the verification
+  record for the blocked digest and critical advisory identifiers.

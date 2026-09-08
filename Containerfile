@@ -17,7 +17,8 @@ RUN CGO_ENABLED=0 go build -mod=readonly -trimpath -o /out/relay-api ./cmd/api \
     && CGO_ENABLED=0 go build -mod=readonly -trimpath -o /out/relay-migrate ./cmd/migrate
 
 FROM docker.io/library/alpine:3.23 AS runtime
-RUN apk add --no-cache ca-certificates \
+RUN apk upgrade --no-cache libcrypto3 libssl3 \
+    && apk add --no-cache ca-certificates \
     && addgroup -S -g 10001 relay \
     && adduser -S -D -H -u 10001 -G relay relay
 WORKDIR /app

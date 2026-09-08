@@ -122,7 +122,8 @@ container-publish:
     repository=$(tofu -chdir=infra output -raw repository_url)
     account=$(aws sts get-caller-identity --region us-east-1 --query Account --output text)
     test "$repository" = "$account.dkr.ecr.us-east-1.amazonaws.com/p3-relay"
-    podman build --label "org.opencontainers.image.revision=$revision" \
+    # Refresh runtime security packages rather than reusing cached package-install layers.
+    podman build --pull=always --no-cache --label "org.opencontainers.image.revision=$revision" \
         --tag "$repository:$revision" --file Containerfile .
     directory=$(mktemp --directory "${XDG_RUNTIME_DIR:?}/p3-relay-publish.XXXXXX")
     trap 'rm --recursive --force "$directory"' EXIT
