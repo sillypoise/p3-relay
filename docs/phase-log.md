@@ -203,5 +203,8 @@ Secret/database/migration checks and live service verification still precede act
   OpenSSL inventory finding. The image is blocked and has never been activated.
 - Updated the runtime libraries from OpenSSL 3.5.7-r0 to 3.5.8-r0, verified in the rebuilt image.
   Release builds now refresh base images and avoid cached package-install layers.
-- Replacement publication and scan must succeed before any runtime activation. See the verification
-  record for the blocked digest and critical advisory identifiers.
+- Published replacement revision `efb875e`; ECR basic scanning completed with no reported findings.
+  Confirmed ephemeral registry authentication directories were cleaned up. The earlier image remains
+  blocked. See the verification record for both digests and the scanner's limited scope.
+- Application activation still awaits account-level service-linked-role approval, budget alert
+  configuration, database/secrets/migration checks, and live deployment verification.

@@ -61,7 +61,16 @@ CVE-2026-75803 and CVE-2026-63073. These are inventory findings, not demonstrate
 
 The runtime build now upgrades `libcrypto3` and `libssl3`; local verification found 3.5.8-r0. Release
 builds refresh base images and package-install layers rather than reusing stale security packages.
-The replacement image requires publication and a fresh scan before any activation.
+Replacement revision `efb875e` was published with this manifest digest:
+
+```text
+sha256:5e48d76746fe5bc51c52037255602df9f437211b81fea0004e1837ee0ae1f998
+```
+
+ECR basic scanning completed with an empty finding-count map. The former OpenSSL findings are absent
+from this replacement scan. This is not a claim that application code/dependencies have no
+vulnerabilities. Temporary registry-auth directories were confirmed removed after publication.
+Service activation remains blocked by the other deployment gates, not the resolved OS findings.
 
 ## Repeating checks and remaining gates
 
@@ -71,8 +80,8 @@ metadata using S3 `head-object`/`get-public-access-block`, SQS `get-queue-attrib
 secret values or state bodies into logs for these checks. Repeat `just container-build` and
 `just check` for code changes.
 
-Still pending: approve a scanned replacement image, apply the prepared Express/network/control-plane
-configuration,
+Still pending: apply the prepared Express/network/control-plane configuration after account-level
+service-linked-role approval,
 verified database TLS and scoped database roles, secret population, migrations, generated HTTPS
 origin, budget notification delivery, full cost review, measured capacity, real task-role behavior,
 actual SQS redrive, and live delivery/retry/recovery. No public demo is running yet.
