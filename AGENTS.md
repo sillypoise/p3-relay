@@ -62,6 +62,9 @@ If a rule should apply across multiple repositories, promote it into the guide p
 - Validation: `just check` includes mocked infrastructure tests and validation after `just install`;
   `just sandbox-integration` additionally exercises PostgreSQL, sandbox,
   and notification-loss recovery against an empty disposable `p3_relay_test` database.
+- Gateway validation: `just gateway-container-test` builds the separate `gateway/` image and tests
+  both TLS hops, role boundaries, overload and recovery against disposable local Podman containers.
+  It never connects to Railway; see `gateway/README.md` for the still-closed deployment gates.
 - Run one test: `go test ./cmd/api -run TestName` or
   `pnpm --dir web test -- --run src/App.test.tsx`
 

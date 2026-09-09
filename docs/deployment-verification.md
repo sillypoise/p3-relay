@@ -96,6 +96,24 @@ mode 0600; encrypted state and private saved plans contain the configured recipi
 reserved addresses instead. The main state now owns 31 resources, separate from the five-resource
 state bootstrap and AWS-owned service-linked role.
 
+## Local PgBouncer candidate — 2026-09-09
+
+`just gateway-container-test` passed with strict Go vet and race-enabled tests against disposable
+Podman containers. The [gateway contract and test matrix](../gateway/README.md) distinguish real local
+TLS/authentication/permission/connection-limit/recovery checks from still-unverified live behavior.
+Both untrusted backend CA and trusted-but-wrong backend hostname were rejected. Partial startup
+writes were removed before container teardown after forced tmpfs exhaustion.
+
+The image runs as UID 10001 with a read-only filesystem and dropped capabilities in these tests.
+It uses PgBouncer 1.25.1-r0 and patched libcrypto3/libssl3 3.5.8-r0. This candidate has not been
+published or vulnerability-scanned; the earlier application-image ECR scan does not cover it.
+A single sample with 24 held small-query sessions reported `5.763MB / 134.2MB` in Podman's memory
+output. Do not substitute that observation for peak/resource/cost measurements on Railway.
+
+There were no cloud mutations in this implementation step. Production credentials/certificates,
+roles/schema, gateway deployment and application CA loading remain pending. Native Railway default
+normalization remains an explicitly recorded gap in [.railway/README.md](../.railway/README.md).
+
 ## Repeating checks and remaining gates
 
 Use `just infrastructure-plan` through the approved AWS wrapper for drift checks. Review live

@@ -45,12 +45,12 @@ develop:
     wait -n "${processes[@]}"
 
 format: infrastructure-format
-    gofmt -w cmd internal
+    gofmt -w cmd internal gateway
     pnpm --dir web format
     web/node_modules/.bin/oxfmt .railway/*.ts
 
 format-check:
-    test -z "$(gofmt -l cmd internal)"
+    test -z "$(gofmt -l cmd internal gateway)"
     pnpm --dir web format-check
 
 lint:
@@ -68,6 +68,7 @@ build:
     go build -o /tmp/p3-relay-api ./cmd/api
     go build -o /tmp/p3-relay-worker ./cmd/worker
     go build -o /tmp/p3-relay-receiver ./cmd/receiver
+    go build -o /tmp/p3-relay-gateway ./gateway
     pnpm --dir web build
 
 check: format-check lint typecheck test build infrastructure-validate gateway-check
@@ -78,6 +79,15 @@ gateway-check:
     web/node_modules/.bin/oxlint --deny-warnings .railway/*.ts
     pnpm --dir web exec tsc --project ../.railway/tsconfig.json
     node --test .railway/railway.test.ts
+
+# Gateway has its own allowlisted context; no operator credentials enter the image.
+gateway-container-build:
+    podman build --file gateway/Containerfile --tag localhost/p3-relay-gateway:development gateway
+
+# Disposable local PostgreSQL and gateway only; never contacts Railway or uses a database URL.
+gateway-container-test: gateway-container-build
+    go vet -tags gatewayintegration ./gateway
+    go test -race -tags gatewayintegration ./gateway -count=1 -timeout=3m -v
 
 # Pin the official Linux/x86_64 CLI locally; 4.11 uses removed Railway API fields.
 gateway-tool-install:

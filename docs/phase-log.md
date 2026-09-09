@@ -256,3 +256,26 @@ Secret/database/migration checks and live service verification still precede act
   The pinned-plan SDK version guard needed an inherited shell-path correction, not a bypass.
 - Gateway TLS/authentication/bootstrap, database roles, bounded connection/failure tests and the
   running gateway image remain pending. No public Relay application is running yet.
+
+### Local gateway image and boundary verification
+
+- Added a separate PgBouncer 1.25.1 image and bounded Go startup loader. Client TLS is required;
+  backend TLS verifies the Railway private hostname and supplied CA. Only Relay's two database
+  roles and explicit database alias are admitted. No administrator credential is included.
+- Private startup files are owner-only tmpfs files. Failed preparation cleans them up; successful
+  exec removes secret variables from PgBouncer's environment. The build context excludes fixtures.
+- Added disposable Podman tests for actual TLS/authentication/SQL permissions, runtime connection
+  exhaustion, backend and gateway interruption/recovery, and partial-write cleanup under ENOSPC.
+  Certificate/key/password/size/expiry boundary tests run in the normal Go suite.
+- A readiness test initially treated cached authentication as sufficient. Corrected it to require
+  a SQL roundtrip and use fresh failure deadlines, avoiding false recovery/interruption evidence.
+- Local tests reject a trusted backend certificate with the wrong hostname as well as an unrelated
+  CA. A first assertion expected different PgBouncer wording; the observed diagnostic was
+  `not present in server certificate`, and the test now checks that actual failure classification.
+- The race-enabled integration suite passed. A single small-query sample with 24 held sessions
+  reported 5.763 MB of gateway memory, not peak load or production capacity.
+- No cloud deployment, SQL mutation on Railway, or production secret provisioning occurred in this
+  step. The reserved gateway remains empty. Release scanning, real grants/identities, application
+  trust loading, rotation, native settings validation and live acceptance remain required.
+- The [gateway contract](../gateway/README.md) records inputs, failures, resource assumptions,
+  maintainer-owned credential lifecycle and remaining gates.

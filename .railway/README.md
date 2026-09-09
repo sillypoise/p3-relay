@@ -69,9 +69,11 @@ Known tooling gap: the next plan reports `source.type` (`null` versus `empty`),
 normalization differences or claim zero drift; resolve or explicitly validate effective deployment
 settings before runtime activation. Other deployment limits round-tripped in the inspected graph.
 
-Before deploying PgBouncer: implement/test TLS-required client connections, verified backend TLS,
-Relay-only authentication and database grants, bounded connections/timeouts, secret-safe startup,
-certificate rotation, and failure/recovery behavior. Populate private keys/passwords through the
+The [gateway image and local tests](../gateway/README.md) now cover both TLS hops, Relay-only
+credentials, connection exhaustion, startup cleanup and interruption/recovery. This is local evidence,
+not live gateway verification. Before deploying: provision real scoped grants and identities, test
+certificate rotation and application CA loading, scan the release image, and close the native
+settings/lifecycle gaps above. Populate private keys/passwords through the
 CLI's stdin/sealed-variable mechanisms, never IaC values or command arguments. Inspect raw variable
 command output only in a controlled consumer: it can contain credentials.
 
