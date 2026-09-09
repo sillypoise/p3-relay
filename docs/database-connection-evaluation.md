@@ -1,6 +1,7 @@
 # AWS-to-Railway database connection evaluation
 
-Owner: Relay repository maintainer. Status: read-only evaluation; no topology approved or deployed.
+Owner: Relay repository maintainer. Status: gateway approach approved; preparation in progress.
+No running gateway or shared PostgreSQL exposure has been deployed.
 Scope: retain AWS ECS for Relay and the existing shared Railway PostgreSQL database.
 
 ## Findings and confidence
@@ -33,7 +34,7 @@ Public PostgreSQL access is not inherently invalid. The gateway recommendation f
 shared instance's current configuration and the requirement to avoid disrupting its other users,
 not from a claim that every public database port exposes its contents.
 
-## Narrow gateway design, if approved
+## Approved gateway design
 
 ```text
 AWS API / worker / one-off migrator
@@ -76,12 +77,13 @@ memory and database traffic before accepting the estimate; revisit for higher tr
 
 ## Provisioning and verification gates
 
-The community Railway Terraform provider documents service and TCP-proxy resources. This is evidence
-of resource coverage, not a tested deployment path. Its service docs still refer to legacy Railway
-configuration files, while current Railway docs describe a newer IaC system. Check the pinned
-provider's API compatibility and resource-limit support before adopting it. Keep ownership scoped to
-the Relay gateway: no project-wide import/apply that takes over the existing database or application.
-Use OpenTofu where supported and document any required exception rather than silently replacing it.
+Provider v0.6.2 inspection found account-token authentication, not the available project-token
+pathway. Installed CLI 4.11 also failed against a removed Railway API field. A pinned official CLI
+5.49.6 and SDK 3.11.0 now provide a native, project-authenticated plan with a permanent named partial.
+The first live plan creates only the empty gateway service, including TCP and deployment limits;
+it proposes no changes to PostgreSQL, its volume, or Integration Hub. Four offline tests cover
+ownership, missing context, wrong project and wrong environment, with strict types/lint checks.
+See the scoped [OpenTofu exception and workflow](../.railway/README.md). No broader token was requested.
 
 Before activation, verify valid TLS and role access; rejection of non-TLS, wrong CA/name, invalid
 credentials and non-Relay roles; denied cross-schema access and runtime DDL; connection exhaustion,

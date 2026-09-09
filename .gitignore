@@ -30,5 +30,10 @@
 .vscode/
 .DS_Store
 
+# Project-local, checksum-verified deployment tools.
+/.tools/
+/.railway/node_modules/
+/.railway/gateway-plan.json
+
 # Logs.
 *.log

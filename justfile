@@ -10,6 +10,7 @@ _default:
 install:
     go mod download
     pnpm --dir web install --frozen-lockfile
+    pnpm --dir .railway install --frozen-lockfile --ignore-scripts
     just infrastructure-init
 
 api-develop:
@@ -46,6 +47,7 @@ develop:
 format: infrastructure-format
     gofmt -w cmd internal
     pnpm --dir web format
+    web/node_modules/.bin/oxfmt .railway/*.ts
 
 format-check:
     test -z "$(gofmt -l cmd internal)"
@@ -68,7 +70,40 @@ build:
     go build -o /tmp/p3-relay-receiver ./cmd/receiver
     pnpm --dir web build
 
-check: format-check lint typecheck test build infrastructure-validate
+check: format-check lint typecheck test build infrastructure-validate gateway-check
+
+# Local gateway ownership checks; no Railway authentication or API calls.
+gateway-check:
+    web/node_modules/.bin/oxfmt --check .railway/*.ts
+    web/node_modules/.bin/oxlint --deny-warnings .railway/*.ts
+    pnpm --dir web exec tsc --project ../.railway/tsconfig.json
+    node --test .railway/railway.test.ts
+
+# Pin the official Linux/x86_64 CLI locally; 4.11 uses removed Railway API fields.
+gateway-tool-install:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    test "$(uname --kernel-name --machine)" = "Linux x86_64"
+    directory=$(mktemp --directory)
+    trap 'rm --recursive --force "$directory"' EXIT
+    base=https://github.com/railwayapp/cli/releases/download/v5.49.6
+    curl --fail --location --silent --show-error --connect-timeout 5 --max-time 90 \
+        --max-filesize 7766908 \
+        "$base/railway-v5.49.6-x86_64-unknown-linux-musl.tar.gz" --output "$directory/cli.tar.gz"
+    digest=39c89cc07203331392ae5d65f3a21bc49a7219cefdb69948245aca638a33856e
+    printf '%s  %s\n' "$digest" "$directory/cli.tar.gz" | sha256sum --check
+    tar --extract --file "$directory/cli.tar.gz" --directory "$directory" \
+        --no-same-owner --no-same-permissions railway
+    mkdir --parents .tools
+    install --mode=0755 "$directory/railway" .tools/railway
+
+# Native Railway IaC exception: the community provider cannot use project-scoped authentication.
+gateway-plan:
+    umask 077; .tools/railway config plan --out .railway/gateway-plan.json
+
+[confirm("Apply only the reviewed Relay gateway plan? No destructive changes are allowed.")]
+gateway-apply:
+    .tools/railway config apply --plan .railway/gateway-plan.json --yes
 
 # Requires an empty disposable PostgreSQL database named p3_relay_test; never use Railway.
 sandbox-integration:
