@@ -29,6 +29,7 @@ foundations are now applied. The OCI build and smoke checks pass; no public appl
 - [Sandbox contract](docs/sandbox-contract.md)
 - [SQS notification contract](docs/notification-contract.md)
 - [Deployment preparation](docs/deployment-plan.md)
+- [AWS-to-Railway connection evaluation](docs/database-connection-evaluation.md)
 - [Deployment verification scope](docs/deployment-verification.md)
 - [Infrastructure workflow](infra/README.md)
 - [AWS cost estimate](docs/cost-estimate.md)

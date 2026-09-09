@@ -79,13 +79,13 @@ Authenticated Railway CLI and SSH access succeeded against the existing `Postgre
 - Integration Hub uses this same database service. No schemas, roles, passwords, networking,
   service configuration, or application deployments were changed during inspection.
 
-Decision pending: prefer a Relay-only, TLS-required gateway restricted to Relay database roles,
-keeping PostgreSQL private. This adds a Railway service, configuration, certificate lifecycle,
-and unestimated recurring cost. An alternative is a public PostgreSQL proxy with a separate
-shared-service TLS-hardening and compatibility review; do not silently expose the existing listener
-or weaken certificate verification. Confidence is high in the inspected configuration, medium in
-which topology is preferable until gateway cost/provider support is checked. Obtain the operator's
-network choice before provisioning it.
+The [connection evaluation](database-connection-evaluation.md) compares direct public TCP,
+Relay-only PgBouncer, a private overlay, and moving the runtime to Railway. Recommendation:
+Relay-only PgBouncer if ECS remains required, with medium confidence pending provider compatibility
+and workload tests. Estimated additional Railway usage is $1.34–$2.78/month under the stated
+low-traffic assumptions, not a measured cost or cap. Private Railway traffic already uses WireGuard;
+PostgreSQL TLS being optional there does not imply plaintext traffic over the public internet.
+Obtain the operator's network choice before provisioning or changing the shared listener.
 
 Application secret values can be generated using cryptographic randomness: ingress signing key,
 operator token, sandbox key, delivery signing key, and source identifier. Database passwords will
