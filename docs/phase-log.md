@@ -223,3 +223,17 @@ Secret/database/migration checks and live service verification still precede act
 - Added budget/activation checks covering valid configuration, disabled defaults, invalid mailboxes,
   local-part boundaries, and the missing-budget error path. Full recurring-cost review and
   database/secrets/migration checks still block public service activation.
+
+
+### Read-only Railway inspection
+
+- Verified authenticated CLI/SSH access to the existing shared PostgreSQL service. Read-only SQL
+  confirmed TLS is enabled and that Relay's schema/runtime/migration roles are absent.
+- The configured database endpoint is private-only. The server certificate validates for its private
+  hostname against the deployment CA; ECS connectivity has not been verified.
+- HBA allows password-authenticated non-TLS connections. Stopped before exposing a public port,
+  changing shared TLS settings, creating roles, populating secrets, or launching application compute.
+- Recorded the network decision in the deployment plan: a Relay-only TLS gateway versus a reviewed
+  public proxy/shared-service hardening change. Gateway costs and provider support remain unchecked.
+- An initial SSH SQL inspection invoked a pager and timed out. Subsequent inspections explicitly
+  disabled paging and bounded SQL/idle session time; no SQL mutations were issued.

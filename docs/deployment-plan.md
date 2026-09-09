@@ -63,6 +63,37 @@ The final drift plan has no changes. Budget configuration is verified; inbox del
 Secrets, migrations, full cost review, capacity measurement, and live recovery remain open.
 No Railway objects have been changed.
 
+## Railway inspection and network decision
+
+Authenticated Railway CLI and SSH access succeeded against the existing `Postgres` service in
+`upwork-portfolio` / `production`. Read-only inspection found:
+
+- Only `postgres.railway.internal:5432` is configured; no `DATABASE_PUBLIC_URL` is supplied.
+  Public endpoint probing stopped before authentication because that endpoint was unavailable.
+- PostgreSQL has TLS enabled. Its certificate names `localhost` and `postgres.railway.internal`,
+  issued by the deployment's private CA. Verification against that CA and the private hostname
+  succeeded inside the authenticated SSH session. This is not verification from ECS.
+- The external-address HBA rule is `host all all all scram-sha-256`, not `hostssl`; it does not
+  require TLS. Simply adding a public TCP proxy would expose the shared authentication surface.
+- `p3_relay`, `p3_relay_runtime`, and `p3_relay_migrator` do not exist yet.
+- Integration Hub uses this same database service. No schemas, roles, passwords, networking,
+  service configuration, or application deployments were changed during inspection.
+
+Decision pending: prefer a Relay-only, TLS-required gateway restricted to Relay database roles,
+keeping PostgreSQL private. This adds a Railway service, configuration, certificate lifecycle,
+and unestimated recurring cost. An alternative is a public PostgreSQL proxy with a separate
+shared-service TLS-hardening and compatibility review; do not silently expose the existing listener
+or weaken certificate verification. Confidence is high in the inspected configuration, medium in
+which topology is preferable until gateway cost/provider support is checked. Obtain the operator's
+network choice before provisioning it.
+
+Application secret values can be generated using cryptographic randomness: ingress signing key,
+operator token, sandbox key, delivery signing key, and source identifier. Database passwords will
+be generated for separate Relay-only roles after the connection topology is selected. Keep the
+shared PostgreSQL administrator credential out of AWS runtime secrets. A controlled HTTPS receiver
+is also needed for live operator-delivery evidence; its URL is configuration, not a secret, and the
+existing visitor receiver simulations are not a substitute for that network test.
+
 ## Container packaging
 
 `just container-build` builds `localhost/p3-relay-api:development` using Podman. The image includes:
