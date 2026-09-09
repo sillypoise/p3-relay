@@ -1,7 +1,8 @@
 # AWS-to-Railway database connection evaluation
 
 Owner: Relay repository maintainer. Status: gateway approach approved; preparation in progress.
-No running gateway or shared PostgreSQL exposure has been deployed.
+An empty gateway service and its dedicated endpoint are reserved; no gateway process is running.
+The shared PostgreSQL service remains private.
 Scope: retain AWS ECS for Relay and the existing shared Railway PostgreSQL database.
 
 ## Findings and confidence
@@ -92,7 +93,9 @@ Keep the shared administrator password out of both AWS tasks and the gateway.
 
 Recommendation confidence: **medium**. The mechanisms and prices are documented, but provider
 compatibility, workload sizing and live behavior still need implementation-time verification.
-No infrastructure or database mutations were made for this evaluation.
+The evaluation itself was read-only. Subsequent approved preparation created only the empty
+gateway service and its endpoint. Existing deployments were unchanged and PostgreSQL still has
+no public TCP proxy. See the [checkpoint and known drift gap](../.railway/README.md).
 
 ## Sources
 

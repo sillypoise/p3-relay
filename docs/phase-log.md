@@ -237,3 +237,22 @@ Secret/database/migration checks and live service verification still precede act
   public proxy/shared-service hardening change. Gateway costs and provider support remain unchecked.
 - An initial SSH SQL inspection invoked a pager and timed out. Subsequent inspections explicitly
   disabled paging and bounded SQL/idle session time; no SQL mutations were issued.
+
+
+### Approved gateway preparation
+
+- The operator approved the Relay-only gateway. Community provider v0.6.2 uses account-token
+  authentication, while available access is project-scoped. CLI 4.11 also failed against a removed
+  API field. Documented a narrow, maintainer-owned native Railway IaC exception with a review date.
+- Installed official CLI 5.49.6 locally after release-checksum verification and pinned SDK 3.11.0.
+  No system tool was replaced and no broader credential was requested.
+- Added the permanent `p3-relay-gateway` partial. A live pinned plan created only the empty gateway
+  service and port 6432 proxy, with explicit CPU/memory/replica/restart/drain settings.
+- Verified no gateway deployment exists, existing PostgreSQL/Integration Hub deployment IDs stayed
+  unchanged, and PostgreSQL's public TCP-proxy list is still empty. No SQL mutations were issued.
+- The follow-up native plan reports three default-normalization differences; this is a documented
+  tooling gap, not a zero-drift result. Do not blindly reapply or ignore other changes.
+- `just check` passed, including 28 OpenTofu tests and four offline gateway ownership/target tests.
+  The pinned-plan SDK version guard needed an inherited shell-path correction, not a bypass.
+- Gateway TLS/authentication/bootstrap, database roles, bounded connection/failure tests and the
+  running gateway image remain pending. No public Relay application is running yet.

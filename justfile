@@ -99,11 +99,14 @@ gateway-tool-install:
 
 # Native Railway IaC exception: the community provider cannot use project-scoped authentication.
 gateway-plan:
-    umask 077; .tools/railway config plan --out .railway/gateway-plan.json
+    # SDK 3.11 checks $_ as the CLI path; unset the shell's inherited just path, not the check.
+    umask 077; env --unset=_ PATH="$PWD/.tools:$PATH" \
+        railway config plan --out .railway/gateway-plan.json
 
 [confirm("Apply only the reviewed Relay gateway plan? No destructive changes are allowed.")]
 gateway-apply:
-    .tools/railway config apply --plan .railway/gateway-plan.json --yes
+    env --unset=_ PATH="$PWD/.tools:$PATH" \
+        railway config apply --plan .railway/gateway-plan.json --yes
 
 # Requires an empty disposable PostgreSQL database named p3_relay_test; never use Railway.
 sandbox-integration:
