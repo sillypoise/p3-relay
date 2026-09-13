@@ -279,3 +279,22 @@ Secret/database/migration checks and live service verification still precede act
   trust loading, rotation, native settings validation and live acceptance remain required.
 - The [gateway contract](../gateway/README.md) records inputs, failures, resource assumptions,
   maintainer-owned credential lifecycle and remaining gates.
+
+### Application gateway trust and rotation preparation
+
+- Added one shared database TLS loader for API, worker and migration connections. Configured CA
+  trust requires hostname verification, TLS 1.2+, no fallback targets and bounded valid CA bundles.
+  Rejected inputs do not mutate the connection configuration or disclose supplied values.
+- ECS explicitly requires CA material in all three containers and references separate `database_ca`
+  JSON fields in runtime/migration secrets. Local configurations without CA retain their previous
+  behavior. This is a controlled first-deployment change; no populated secrets or running tasks
+  are migrated.
+- The real local gateway tests now use the application loader. They exercise old/new CA overlap,
+  successful SQL with both identities, and rejection of the old identity after trust retirement.
+  Separate local ports model identity transitions; actual Railway/ECS rollout remains unverified.
+- `just check` and the race-enabled gateway container suite passed, including byte/count/time
+  boundaries, insecure-mode rejection, unchanged failure state and scoped task-secret assertions.
+- Authenticated AWS planning reported no changes: the empty image gate still leaves task definitions
+  unregistered. No infrastructure apply was needed.
+- Production roles, certificates, secrets, expiry alerts and live activation remain pending. See the
+  [database TLS contract](database-tls-contract.md) for the rollout sequence and compatibility delta.

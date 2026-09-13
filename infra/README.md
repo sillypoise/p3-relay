@@ -83,12 +83,17 @@ the exact verified HTTPS hostname, without credentials, a path, or trailing slas
 
 Secret JSON fields, populated through the controlled channel rather than OpenTofu:
 
-- `p3-relay/runtime`: `database_url`, `source_key`, `ingress_secret`, `operator_token`,
+- `p3-relay/runtime`: `database_url`, `database_ca`, `source_key`, `ingress_secret`, `operator_token`,
   `destination_url`, `sandbox_key`, and `delivery_secret`.
-- `p3-relay/migration`: `database_url` for a separately scoped migration identity.
+- `p3-relay/migration`: `database_url` and `database_ca` for a separately scoped migration identity.
 
 The API receives only its required fields; the worker receives only database/delivery credentials.
-The one-off migration task receives only its separate database URL and has no AWS task role.
+The one-off migration task receives only its separate database URL/CA and has no AWS task role.
+All three containers set `RELAY_DATABASE_CA_REQUIRED=true`. The URL must use `sslmode=verify-full`
+and the gateway alias `p3_relay`; `database_ca` contains its public trust anchor, not a private key.
+See the [database TLS contract](../docs/database-tls-contract.md). Populate the newly required CA
+field before registering these task definitions. Existing secret versions are still empty; this is
+an initial controlled cutover, not a migration of a running deployment.
 Execution roles can pull this repository, write this log group, and read their own secret container.
 The runtime task role has only four source-queue actions. Co-located processes share that IAM role;
 this is not process-level IAM isolation. See the [contract delta](../docs/notification-contract.md).

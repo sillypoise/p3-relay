@@ -61,7 +61,8 @@ no compute. The operator approved shared service-linked-role bootstrap; ECS crea
 An EC2 throttling failure recovered through a fresh three-addition plan, not replacement or deletion.
 The final drift plan has no changes. Budget configuration is verified; inbox delivery is not.
 Secrets, migrations, full cost review, capacity measurement, and live recovery remain open.
-No Railway objects have been changed.
+The shared PostgreSQL and Integration Hub services remain unchanged. Subsequent approved gateway
+preparation reserved an empty Relay-only service and TCP endpoint; see the phase log.
 
 ## Railway inspection and network decision
 
@@ -85,7 +86,9 @@ Relay-only PgBouncer if ECS remains required, with medium confidence pending pro
 and workload tests. Estimated additional Railway usage is $1.34–$2.78/month under the stated
 low-traffic assumptions, not a measured cost or cap. Private Railway traffic already uses WireGuard;
 PostgreSQL TLS being optional there does not imply plaintext traffic over the public internet.
-Obtain the operator's network choice before provisioning or changing the shared listener.
+The operator subsequently approved this gateway approach. The gateway candidate and application
+CA loader are locally tested; provisioning real identities/grants and live activation remain gated.
+Do not change the shared listener.
 
 Application secret values can be generated using cryptographic randomness: ingress signing key,
 operator token, sandbox key, delivery signing key, and source identifier. Database passwords will
@@ -106,6 +109,10 @@ existing visitor receiver simulations are not a substitute for that network test
 
 The build uses locked Go/pnpm dependencies in separate stages. `.containerignore` allowlists source
 inputs and excludes local environment files, Git history, dependency folders, and test artifacts.
+All three database clients now support injected CA PEM with hostname verification; see the
+[database TLS contract](database-tls-contract.md). ECS requires the new `database_ca` secret fields
+and a newly built application image before activation.
+
 Runtime image files are root-owned and readable by the application user. The intended runtime
 filesystem is read-only; secrets and database URLs arrive through runtime environment injection.
 

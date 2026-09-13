@@ -31,6 +31,12 @@ func main() {
 		slog.Error("parse PostgreSQL configuration")
 		os.Exit(1)
 	}
+	if err := postgres.ConfigureTLS(pool_configuration.ConnConfig, &postgres.TLSOptions{
+		CAPEM: os.Getenv("RELAY_DATABASE_CA"), Required: os.Getenv("RELAY_DATABASE_CA_REQUIRED"),
+	}); err != nil {
+		slog.Error("invalid PostgreSQL trust configuration")
+		os.Exit(1)
+	}
 	pool_configuration.MaxConns = 8
 	pool_configuration.MinConns = 1
 	pool_configuration.MaxConnLifetime = 30 * time.Minute

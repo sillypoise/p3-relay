@@ -20,6 +20,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/sillypoise/p3-relay/internal/postgres"
 )
 
 type gatewayFixture struct {
@@ -67,6 +68,7 @@ func TestGatewayContainer(t *testing.T) {
 	fixture.checkRecovery(t)
 	fixture.rejectBackendCA(t)
 	fixture.checkStartupFailure(t)
+	fixture.checkTrustRotation(t)
 }
 
 func startFixture(t *testing.T, backendHostname string) *gatewayFixture {
@@ -172,18 +174,17 @@ func (fixture *gatewayFixture) gatewayCommand(
 func (fixture *gatewayFixture) clientConfiguration(t *testing.T) *pgx.ConnConfig {
 	t.Helper()
 	value, err := pgx.ParseConfig(
-		"host=127.0.0.1 user=p3_relay_runtime dbname=p3_relay sslmode=disable")
+		"host=gateway.test user=p3_relay_runtime dbname=p3_relay sslmode=verify-full")
 	if err != nil {
 		t.Fatal("fixture connection parsing failed")
 	}
-	roots := x509.NewCertPool()
-	if !roots.AppendCertsFromPEM([]byte(fixture.configuration.certificate)) {
-		t.Fatal("invalid test CA")
+	// Dial loopback without weakening verification of the fixture's synthetic DNS identity.
+	value.Host = "127.0.0.1"
+	if err := postgres.ConfigureTLS(value, &postgres.TLSOptions{
+		CAPEM: fixture.configuration.certificate, Required: "true",
+	}); err != nil {
+		t.Fatal("application trust configuration failed", err)
 	}
-	value.TLSConfig = &tls.Config{
-		MinVersion: tls.VersionTLS12, RootCAs: roots, ServerName: "gateway.test",
-	}
-	value.Fallbacks = nil
 	value.Port = fixture.port
 	value.Password = fixture.configuration.runtimePassword
 	value.ConnectTimeout = time.Second

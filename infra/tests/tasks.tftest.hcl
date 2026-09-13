@@ -43,6 +43,11 @@ run "bounded_tasks_and_scoped_credentials" {
       endswith(container.image, "@${var.runtime_image_digest}") &&
       contains(container.environment, {
         name = "RELAY_ALLOW_PRIVATE_DESTINATIONS", value = "false"
+        }) && contains(container.environment, {
+        name = "RELAY_DATABASE_CA_REQUIRED", value = "true"
+        }) && contains(container.secrets, {
+        name      = "RELAY_DATABASE_CA"
+        valueFrom = "${aws_secretsmanager_secret.runtime.arn}:database_ca::"
       })
     ])
     error_message = "Both containers require bounded, non-root, read-only, digest-pinned execution."
@@ -54,13 +59,19 @@ run "bounded_tasks_and_scoped_credentials" {
       [{ containerPort = 8080, protocol = "tcp", name = "http", appProtocol = "http" }] &&
       [for secret in jsondecode(
         aws_ecs_task_definition.runtime[0].container_definitions
-      )[1].secrets : secret.name] == ["RELAY_DATABASE_URL", "RELAY_DELIVERY_SECRET"]
+      )[1].secrets : secret.name] == ["RELAY_DATABASE_CA", "RELAY_DATABASE_URL", "RELAY_DELIVERY_SECRET"]
     )
     error_message = "Express requires Main; the worker must not receive operator or visitor keys."
   }
   assert {
     condition = (
+      jsondecode(aws_ecs_task_definition.migration[0].container_definitions)[0].environment == [{
+        name = "RELAY_DATABASE_CA_REQUIRED", value = "true"
+      }] &&
       jsondecode(aws_ecs_task_definition.migration[0].container_definitions)[0].secrets == [{
+        name      = "RELAY_DATABASE_CA"
+        valueFrom = "${aws_secretsmanager_secret.migration.arn}:database_ca::"
+        }, {
         name      = "RELAY_DATABASE_URL"
         valueFrom = "${aws_secretsmanager_secret.migration.arn}:database_url::"
       }] &&

@@ -71,7 +71,8 @@ and test rotation: stage new public trust alongside old trust in clients, deploy
 identity, verify connections, then retire old trust. Password rotation must update the corresponding
 PostgreSQL role, private gateway auth input and application secret, with an explicit interruption
 window. Restart the gateway to end old sessions; merely changing a password does not revoke existing
-connections. This rollout/rotation procedure is not yet implemented or verified on Railway.
+connections. The [application trust loader](../docs/database-tls-contract.md) and two-anchor overlap/retirement
+are tested locally. This rollout/rotation procedure is not yet implemented or verified on Railway.
 
 ## Local commands and evidence
 
@@ -103,6 +104,8 @@ Executed checks:
 - Forced 8 KiB tmpfs exhaustion after partial writes; startup exited 1, files were removed before
   teardown, and diagnostic output did not contain the fixture credentials.
 - PEM/password limits, invalid/mismatched keys, and certificate validity boundary instants.
+- The same trust loader used by API/worker/migrator, with old/new CA overlap, successful queries
+  against both local identities, and rejection of the retired identity after old trust is removed.
 
 The development build may reuse layers. Release builds must pull fresh bases and disable cached
 package layers (`podman build --pull=always --no-cache`), then scan the resulting image.

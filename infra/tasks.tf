@@ -33,10 +33,12 @@ locals {
     { name = "RELAY_SQS_QUEUE_URL", value = aws_sqs_queue.notifications.url },
     { name = "RELAY_SQS_REGION", value = "us-east-1" },
     { name = "RELAY_ALLOW_PRIVATE_DESTINATIONS", value = "false" },
+    { name = "RELAY_DATABASE_CA_REQUIRED", value = "true" },
     { name = "AWS_EC2_METADATA_DISABLED", value = "true" },
     { name = "GOMEMLIMIT", value = "160MiB" }
   ]
   api_secret_fields = {
+    RELAY_DATABASE_CA     = "database_ca"
     RELAY_DATABASE_URL    = "database_url"
     RELAY_SOURCE_KEY      = "source_key"
     RELAY_INGRESS_SECRET  = "ingress_secret"
@@ -45,6 +47,7 @@ locals {
     RELAY_SANDBOX_KEY     = "sandbox_key"
   }
   worker_secret_fields = {
+    RELAY_DATABASE_CA     = "database_ca"
     RELAY_DATABASE_URL    = "database_url"
     RELAY_DELIVERY_SECRET = "delivery_secret"
   }
@@ -136,7 +139,11 @@ resource "aws_ecs_task_definition" "migration" {
     name             = "Migration", image = local.runtime_image, cpu = 256, memory = 512
     command          = ["/usr/local/bin/relay-migrate"]
     workingDirectory = "/app"
+    environment      = [{ name = "RELAY_DATABASE_CA_REQUIRED", value = "true" }]
     secrets = [{
+      name      = "RELAY_DATABASE_CA"
+      valueFrom = "${aws_secretsmanager_secret.migration.arn}:database_ca::"
+      }, {
       name      = "RELAY_DATABASE_URL"
       valueFrom = "${aws_secretsmanager_secret.migration.arn}:database_url::"
     }]

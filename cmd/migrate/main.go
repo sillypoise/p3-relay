@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/jackc/pgx/v5"
+	"github.com/sillypoise/p3-relay/internal/postgres"
 	"log/slog"
 	"os"
 	"time"
@@ -16,13 +17,26 @@ func main() {
 	}
 }
 
+func openMigrationConnection(ctx context.Context) (*pgx.Conn, error) {
+	configuration, err := pgx.ParseConfig(os.Getenv("RELAY_DATABASE_URL"))
+	if err != nil {
+		return nil, fmt.Errorf("invalid database connection configuration")
+	}
+	if err := postgres.ConfigureTLS(configuration, &postgres.TLSOptions{
+		CAPEM: os.Getenv("RELAY_DATABASE_CA"), Required: os.Getenv("RELAY_DATABASE_CA_REQUIRED"),
+	}); err != nil {
+		return nil, err
+	}
+	return pgx.ConnectConfig(ctx, configuration)
+}
+
 func migrate() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	if os.Getenv("RELAY_DATABASE_URL") == "" {
 		return fmt.Errorf("database URL required")
 	}
-	conn, err := pgx.Connect(ctx, os.Getenv("RELAY_DATABASE_URL"))
+	conn, err := openMigrationConnection(ctx)
 	if err != nil {
 		return err
 	}
