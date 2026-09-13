@@ -138,6 +138,32 @@ real secret versions/roles, operator expiry alerts and deployment rotation remai
 The separate PgBouncer image is not covered by this application-image scan. No image digest was
 activated in task configuration, and no compute or shared-database mutation occurred in this step.
 
+## Gateway distribution — 2026-09-13
+
+Reviewed and applied a plan adding only public ECR repository `p3-relay-gateway`: one addition,
+no changes/deletions, no compute. Main state now owns 32 resources; a subsequent authenticated
+AWS drift plan reported no changes. Source image revision:
+`8af5bd61ca5413de30122ff2dedf2cad0d79dbaa`.
+
+- Public repository: `public.ecr.aws/f3e3j6u2/p3-relay-gateway`.
+- Private and public manifest digest:
+  `sha256:c89b062ef8e8cf026925620ad8ee63c5b096b8fed578c719fef993f9628e40b7`.
+- ECR basic scan: `COMPLETE`, empty finding counts, `2026-09-13T22:50:59Z`.
+- Anonymous registry-token/manifest requests succeeded; SHA-256 of the returned manifest matched
+  the reviewed digest. Compressed layer sizes total 10,485,984 bytes. This verifies anonymous
+  manifest access, not a Railway pull or runtime deployment.
+- The first copy attempt was rejected by the workstation's registry pull policy before public
+  upload. No policy was weakened. Recovery used the retained local build, verified its configuration
+  digest against the scanned image, and required exact public/private manifest equality.
+- Release guards test scan failure, existing tags, metadata denial, wrong local image configuration
+  and malformed selectors before credential requests/public mutation.
+
+Railway project status/API authentication still succeeds. CLI 5.49.6 native SSH user-key setup is
+rejected; the existing project-scoped CLI 4.11.0 read-only SSH path works. A non-secret interactive
+PTY probe confirmed echo-disabled input only after readiness handshakes. Private SQL/bootstrap
+transport and sealed-variable provisioning remain unverified, as do live roles, gateway source and
+application activation. See the scoped compatibility notes in `.railway/README.md`.
+
 ## Repeating checks and remaining gates
 
 Use `just infrastructure-plan` through the approved AWS wrapper for drift checks. Review live

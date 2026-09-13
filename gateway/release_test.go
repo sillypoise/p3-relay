@@ -13,7 +13,9 @@ import (
 // Mock only external commands: the real just recipes must reject bad selectors, failed scans,
 // existing public tags and denied metadata access before requesting registry credentials or pushes.
 func TestReleaseGuards(t *testing.T) {
-	for _, scenario := range []string{"scan", "existing", "denied", "digest", "component"} {
+	for _, scenario := range []string{
+		"scan", "existing", "denied", "config", "digest", "component",
+	} {
 		t.Run(scenario, func(t *testing.T) {
 			directory := t.TempDir()
 			writeReleaseCommands(t, directory)
@@ -56,13 +58,19 @@ func TestReleaseGuards(t *testing.T) {
 			if scenario == "scan" {
 				expected = "describe-image-scan-findings"
 			}
+			if scenario == "config" {
+				expected = "batch-get-image"
+			}
 			if !strings.Contains(string(calls), expected) {
 				t.Fatal("expected guard not reached")
 			}
 			if strings.Contains(string(calls), "get-login-password") {
 				t.Fatal("rejection requested registry credentials")
 			}
-			if strings.Contains(string(calls), "podman") {
+			if strings.Contains(string(calls), "podman push") {
+				t.Fatal("rejection pushed an image")
+			}
+			if strings.Contains(string(calls), "podman") && scenario != "config" {
 				t.Fatal("rejection touched images")
 			}
 		})
@@ -88,16 +96,25 @@ case "$*" in
 *ecr-public*describe-repositories*) echo public.ecr.aws/abcdefgh/p3-relay-gateway;;
 *ecr-public*describe-images*)
     if test "$RELEASE_TEST_SCENARIO" = existing; then echo '{}'; exit 0; fi
+    if test "$RELEASE_TEST_SCENARIO" = config; then echo ImageNotFoundException >&2; exit 254; fi
     echo AccessDeniedException >&2; exit 254;;
 *ecr*describe-images*)
     echo sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb;;
+*batch-get-image*) printf '{"config":{"digest":"sha256:%064d"}}\n' 0;;
 *image-scan-complete*) exit 0;;
 *describe-image-scan-findings*)
     if test "$RELEASE_TEST_SCENARIO" = scan; then echo False; else echo True; fi;;
 *) exit 90;;
 esac
 `,
-		"podman": "#!/bin/sh\nprintf 'podman\\n' >> \"$RELEASE_TEST_LOG\"\nexit 90\n",
+		"podman": `#!/bin/sh
+set -eu
+printf 'podman %s\n' "$*" >> "$RELEASE_TEST_LOG"
+case "$*" in
+*image*inspect*) printf '[{"Id":"%064d"}]\n' 1;;
+*) exit 90;;
+esac
+`,
 	}
 	for name, content := range commands {
 		if err := os.WriteFile(filepath.Join(directory, name), []byte(content), 0o700); err != nil {

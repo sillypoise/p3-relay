@@ -223,13 +223,17 @@ gateway-container-release $revision $digest:
     else
         grep --quiet ImageNotFoundException "$directory/tag-error"
     fi
-    aws ecr get-login-password --region us-east-1 | podman login \
-        --authfile "$directory/auth.json" --username AWS --password-stdin "${private%%/*}"
-    podman pull --authfile "$directory/auth.json" "$private@$digest"
+    # Preserve the workstation's pull policy: use the existing build only if its config matches.
+    config_digest=$(aws ecr batch-get-image --region us-east-1 --repository-name p3-relay \
+        --image-ids "imageDigest=$digest" --query 'images[0].imageManifest' --output text | \
+        node -p 'JSON.parse(require("node:fs").readFileSync(0,"utf8")).config.digest')
+    local_id=$(podman image inspect --format=json "$private:gateway-$revision" | \
+        node -p 'JSON.parse(require("node:fs").readFileSync(0,"utf8"))[0].Id')
+    test "$config_digest" = "sha256:$local_id"
     aws ecr-public get-login-password --region us-east-1 | podman login \
         --authfile "$directory/auth.json" --username AWS --password-stdin public.ecr.aws
     podman push --retry=1 --authfile "$directory/auth.json" --digestfile "$directory/digest" \
-        "$private@$digest" "docker://$public:$revision"
+        "$private:gateway-$revision" "docker://$public:$revision"
     published=$(< "$directory/digest")
     test "$published" = "$digest"
     actual=$(aws ecr-public describe-images --region us-east-1 --repository-name p3-relay-gateway \

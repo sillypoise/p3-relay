@@ -303,3 +303,20 @@ Secret/database/migration checks and live service verification still precede act
   exited 1 for all three binaries; these do not prove successful packaged database connectivity.
   The [verification record](deployment-verification.md) includes the exact digest and scope.
   The PgBouncer image, real database setup and runtime activation are still separate gates.
+
+### Public gateway artifact and scoped bootstrap investigation
+
+- Applied one reviewed public ECR repository addition, retaining all existing resources. Reused
+  private ECR scanning and the clean-revision publisher rather than adding CI or permanent registry
+  credentials to Railway. The gateway image is publicly available by verified digest.
+- The private scan completed with empty finding counts. Public/private manifest digests match;
+  an anonymous manifest fetch independently verified SHA-256. This is not a deployed gateway.
+- Preserved the workstation's deny-by-default pull policy after the first copy attempt failed.
+  Recovery verified the already-built local image against the scan and copied it without a policy
+  exception. Tests cover failed scans, denied metadata, existing tags and wrong local images.
+- Project-scoped Railway API access works. The newer CLI's native SSH key setup requires an
+  authorization path not available to that token; a narrowly scoped legacy read-only SSH path was
+  verified instead. No account token was requested and no shared database settings were changed.
+- Ordinary stdin probes did not establish a safe bootstrap channel. An echo-disabled interactive
+  handshake succeeded with non-secret text; private SQL transport and variable sealing still need
+  verification before production credentials or roles are created.

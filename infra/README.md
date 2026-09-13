@@ -137,8 +137,10 @@ aws-run sp just gateway-container-release <full-git-revision> <private-manifest-
 The first command retains the clean-revision/fresh-build checks and publishes a `gateway-<revision>`
 tag privately. The second verifies target ownership and tag/digest agreement, waits for scanning,
 and requires `COMPLETE` with empty finding counts. It rejects existing public tags or failed metadata
-lookups before requesting credentials. It then copies the image and requires identical public/private
-manifest digests. A mismatch or ambiguous upload stops activation; inspect artifacts before retrying.
+lookups before requesting credentials. It uses the already-built local image only after comparing
+its configuration digest with the scanned manifest, then requires identical public/private manifest
+digests. This preserves the workstation's deny-by-default registry pull policy; it does not add an
+unsigned-registry exception. A mismatch or ambiguous upload stops activation; inspect artifacts before retrying.
 Generated short-lived registry login credentials use only a private temporary runtime directory.
 The release does not change Railway's source, create tasks or deploy compute.
 

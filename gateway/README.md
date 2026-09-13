@@ -115,8 +115,10 @@ AWS credentials. The [registry workflow](../infra/README.md#gateway-image-distri
 immutable private copy, then verifies digest equality after public publication. Publishing does not
 activate the gateway; public tags must not be used as deployment references.
 
-Remaining release gates: fresh image vulnerability scanning, live certificate/secret provisioning,
-real database grants, live resource/lifecycle checks, effective Railway deployment settings and
+The [verification record](../docs/deployment-verification.md) identifies the scanned, publicly
+available gateway manifest. Each future release still requires its own scan and digest checks.
+Remaining activation gates: live certificate/secret provisioning, real database grants, live
+resource/lifecycle checks, effective Railway deployment settings and
 resolution of the [native planner gap](../.railway/README.md). These tests do not prove crash recovery
 of arbitrary in-flight database transactions or public AWS-to-Railway connectivity. Repository-wide
 assertion density is unmeasured; these checks do not establish SAF-05 compliance.

@@ -73,13 +73,39 @@ The [gateway image and local tests](../gateway/README.md) now cover both TLS hop
 credentials, connection exhaustion, startup cleanup and interruption/recovery. This is local evidence,
 not live gateway verification. Before deploying: provision real scoped grants and identities, test
 certificate rotation and application CA loading, scan the release image, and close the native
-settings/lifecycle gaps above. Populate private keys/passwords through the
-CLI's stdin/sealed-variable mechanisms, never IaC values or command arguments. Inspect raw variable
+settings/lifecycle gaps above. Populate private keys/passwords through a reviewed stdin-based
+secret channel, never IaC values or command arguments; verify sealing support separately rather
+than assuming it is exposed by the public API. Inspect raw variable
 command output only in a controlled consumer: it can contain credentials.
+
+## Gateway release and SSH compatibility checkpoint
+
+The reviewed gateway release is available anonymously at:
+
+`public.ecr.aws/f3e3j6u2/p3-relay-gateway@sha256:c89b062ef8e8cf026925620ad8ee63c5b096b8fed578c719fef993f9628e40b7`
+
+Its private/public manifest digests match. ECR basic scanning completed with empty finding counts;
+this does not prove application/code security or live gateway behavior. The source remains empty
+until real identities/grants and effective deployment settings are verified.
+
+CLI 5.49.6 project status/API calls succeed, but its native SSH path attempts user-key setup and is
+rejected with project-scoped authentication. Do not request an account token to satisfy that tooling
+path. Narrow compatibility exception: the existing CLI 4.11.0 was verified for read-only SSH commands
+against the exact PostgreSQL service ID `d16e1e40-5489-4891-af9c-643e0a8c7a30`. Keep all native IaC
+commands on the pinned 5.49.6 CLI. Maintainer owns this exception; review each release and by
+2026-12-08, retiring it when project-scoped native SSH is supported.
+
+Ordinary piped/command-mode stdin was not verified with the legacy transport. An interactive,
+echo-disabled PTY probe succeeded only with explicit readiness handshakes; it used non-secret test
+text. This is not yet verification of a private SQL/bootstrap channel. No credentials were sent,
+and no production role/schema changes were made. Secret provisioning must still avoid arguments,
+echo, command logs and shared-service redeployments. Public API variable-upsert introspection did not
+expose a sealing option; do not assume the CLI can seal variables merely because it can list them.
 
 ## Evidence references
 
 - Official release: https://github.com/railwayapp/cli/releases/tag/v5.49.6
+- Native SSH key setup: https://github.com/railwayapp/cli/blob/v5.49.6/src/commands/ssh/mod.rs
 - Provider transport: https://github.com/terraform-community-providers/terraform-provider-railway/blob/v0.6.2/internal/provider/client.go
 - Provider authentication: https://github.com/terraform-community-providers/terraform-provider-railway/blob/v0.6.2/docs/index.md
 - Native partial ownership and pinned plans: https://docs.railway.com/infrastructure-as-code
