@@ -116,6 +116,38 @@ If publication fails, inspect the immutable tag before retrying; a failed client
 prove that nothing was uploaded. Never overwrite/delete a release just to make a retry succeed.
 Scan and review the published image before setting `runtime_image_digest`.
 
+## Gateway image distribution
+
+Admitted: one public ECR repository `p3-relay-gateway` for anonymous, digest-pinned Railway pulls.
+A separate GitHub Actions publishing workflow and long-lived AWS registry credentials in Railway
+would add more operational surface. The existing private `p3-relay` repository provides scan-on-push;
+public ECR does not provide image scanning. No runtime credentials/private keys enter either image.
+
+The public repository is managed here, in `us-east-1`, with forced deletion disabled. Public tags
+are **not immutable**. The maintainer must serialize releases and deploy only the reviewed manifest
+digest. Do not infer safety from a tag name or overwrite/delete an artifact to make a retry pass.
+
+After the reviewed repository plan is applied, use the authenticated AWS wrapper:
+
+```sh
+aws-run sp just container-publish gateway
+aws-run sp just gateway-container-release <full-git-revision> <private-manifest-digest>
+```
+
+The first command retains the clean-revision/fresh-build checks and publishes a `gateway-<revision>`
+tag privately. The second verifies target ownership and tag/digest agreement, waits for scanning,
+and requires `COMPLETE` with empty finding counts. It rejects existing public tags or failed metadata
+lookups before requesting credentials. It then copies the image and requires identical public/private
+manifest digests. A mismatch or ambiguous upload stops activation; inspect artifacts before retrying.
+Generated short-lived registry login credentials use only a private temporary runtime directory.
+The release does not change Railway's source, create tasks or deploy compute.
+
+AWS's [published ECR pricing](https://aws.amazon.com/ecr/pricing/) includes 50 GB/month public storage
+and 500 GB/month anonymous public downloads at no cost. Expected initial gateway storage and ten pulls
+are well below those allowances (assumption: image under 50 MB, ten pulls under 0.5 GB). The private
+scan copy adds ordinary ECR storage; allowances and low-volume estimates are not spending caps.
+Review actual image size, storage growth and current pricing before changing that workload.
+
 ## Express Mode preparation and activation
 
 The applied preparation plan adds dedicated two-AZ public networking, an outbound-only migration

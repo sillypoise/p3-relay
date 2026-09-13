@@ -160,29 +160,82 @@ container-build:
     podman build --tag localhost/p3-relay-api:development --file Containerfile .
 
 # Run through aws-run sp. Publish a clean Git revision, never persistent local AWS credentials.
-container-publish:
+container-publish $component="application":
     #!/usr/bin/env bash
     set -euo pipefail
+    case "$component" in
+        application) context=.; definition=Containerfile; prefix= ;;
+        gateway) context=gateway; definition=gateway/Containerfile; prefix=gateway- ;;
+        *) printf 'Expected application or gateway component\n' >&2; exit 2 ;;
+    esac
     git diff --quiet
     git diff --cached --quiet
     test -z "$(git ls-files --others --exclude-standard)"
     revision=$(git rev-parse --verify HEAD)
+    tag="$prefix$revision"
     repository=$(tofu -chdir=infra output -raw repository_url)
     account=$(aws sts get-caller-identity --region us-east-1 --query Account --output text)
     test "$repository" = "$account.dkr.ecr.us-east-1.amazonaws.com/p3-relay"
     # Refresh runtime security packages rather than reusing cached package-install layers.
     podman build --pull=always --no-cache --label "org.opencontainers.image.revision=$revision" \
-        --tag "$repository:$revision" --file Containerfile .
+        --tag "$repository:$tag" --file "$definition" "$context"
     directory=$(mktemp --directory "${XDG_RUNTIME_DIR:?}/p3-relay-publish.XXXXXX")
     trap 'rm --recursive --force "$directory"' EXIT
     aws ecr get-login-password --region us-east-1 | podman login \
         --authfile "$directory/auth.json" --username AWS --password-stdin "${repository%%/*}"
     podman push --retry=1 --authfile "$directory/auth.json" \
-        --digestfile "$directory/digest" "$repository:$revision"
+        --digestfile "$directory/digest" "$repository:$tag"
     # Podman's digest file need not end with a newline.
     digest=$(< "$directory/digest")
     [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]
     printf 'Published %s@%s from revision %s\n' "$repository" "$digest" "$revision"
+
+# Scan-matched public distribution; run through aws-run sp after private gateway publication.
+gateway-container-release $revision $digest:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    [[ "$revision" =~ ^[0-9a-f]{40}$ ]]
+    [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]
+    private=$(tofu -chdir=infra output -raw repository_url)
+    public=$(tofu -chdir=infra output -raw gateway_repository_url)
+    account=$(aws sts get-caller-identity --region us-east-1 --query Account --output text)
+    test "$private" = "$account.dkr.ecr.us-east-1.amazonaws.com/p3-relay"
+    [[ "$public" =~ ^public\.ecr\.aws/[a-z0-9]+/p3-relay-gateway$ ]]
+    actual=$(aws ecr-public describe-repositories --region us-east-1 \
+        --repository-names p3-relay-gateway --query 'repositories[0].repositoryUri' --output text)
+    test "$actual" = "$public"
+    actual=$(aws ecr describe-images --region us-east-1 --repository-name p3-relay \
+        --image-ids "imageTag=gateway-$revision" --query 'imageDetails[0].imageDigest' --output text)
+    test "$actual" = "$digest"
+    aws ecr wait image-scan-complete --region us-east-1 --repository-name p3-relay \
+        --image-id "imageDigest=$digest"
+    scan_check='imageScanStatus.status == `"COMPLETE"` && '
+    scan_check+='imageScanFindings.findingSeverityCounts == `{}`'
+    clean=$(aws ecr describe-image-scan-findings --region us-east-1 --repository-name p3-relay \
+        --image-id "imageDigest=$digest" --output text --query "$scan_check")
+    test "$clean" = True
+    directory=$(mktemp --directory "${XDG_RUNTIME_DIR:?}/p3-relay-release.XXXXXX")
+    trap 'rm --recursive --force "$directory"' EXIT
+    # Public tags lack immutability: reject existing tags, serialize releases, and consume digests.
+    if aws ecr-public describe-images --region us-east-1 --repository-name p3-relay-gateway \
+        --image-ids "imageTag=$revision" > "$directory/tag.json" 2> "$directory/tag-error"; then
+        printf 'Public tag already exists; inspect its digest before any retry\n' >&2; exit 1
+    else
+        grep --quiet ImageNotFoundException "$directory/tag-error"
+    fi
+    aws ecr get-login-password --region us-east-1 | podman login \
+        --authfile "$directory/auth.json" --username AWS --password-stdin "${private%%/*}"
+    podman pull --authfile "$directory/auth.json" "$private@$digest"
+    aws ecr-public get-login-password --region us-east-1 | podman login \
+        --authfile "$directory/auth.json" --username AWS --password-stdin public.ecr.aws
+    podman push --retry=1 --authfile "$directory/auth.json" --digestfile "$directory/digest" \
+        "$private@$digest" "docker://$public:$revision"
+    published=$(< "$directory/digest")
+    test "$published" = "$digest"
+    actual=$(aws ecr-public describe-images --region us-east-1 --repository-name p3-relay-gateway \
+        --image-ids "imageTag=$revision" --query 'imageDetails[0].imageDigest' --output text)
+    test "$actual" = "$digest"
+    printf 'Published scan-matched gateway %s@%s\n' "$public" "$digest"
 
 # Initialize providers for offline validation; no cloud resources or state bucket are created.
 infrastructure-init:

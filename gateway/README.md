@@ -110,6 +110,11 @@ Executed checks:
 The development build may reuse layers. Release builds must pull fresh bases and disable cached
 package layers (`podman build --pull=always --no-cache`), then scan the resulting image.
 
+Distribution uses a scan-matched manifest in public ECR, allowing Railway to pull by digest without
+AWS credentials. The [registry workflow](../infra/README.md#gateway-image-distribution) first scans an
+immutable private copy, then verifies digest equality after public publication. Publishing does not
+activate the gateway; public tags must not be used as deployment references.
+
 Remaining release gates: fresh image vulnerability scanning, live certificate/secret provisioning,
 real database grants, live resource/lifecycle checks, effective Railway deployment settings and
 resolution of the [native planner gap](../.railway/README.md). These tests do not prove crash recovery

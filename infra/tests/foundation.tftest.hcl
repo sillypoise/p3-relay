@@ -51,6 +51,9 @@ run "bounded_encrypted_notifications" {
     condition = (
       aws_ecr_repository.runtime.image_tag_mutability == "IMMUTABLE" &&
       aws_ecr_repository.runtime.force_delete == false &&
+      aws_ecrpublic_repository.gateway.force_destroy == false &&
+      aws_ecrpublic_repository.gateway.repository_name == "p3-relay-gateway" &&
+      aws_ecrpublic_repository.gateway.region == "us-east-1" &&
       aws_secretsmanager_secret.runtime.recovery_window_in_days == 30 &&
       aws_cloudwatch_log_group.runtime.retention_in_days == 7
     )
