@@ -114,6 +114,30 @@ There were no cloud mutations in this implementation step. Production credential
 roles/schema, gateway deployment and application CA loading remain pending. Native Railway default
 normalization remains an explicitly recorded gap in [.railway/README.md](../.railway/README.md).
 
+## Application trust release — 2026-09-13
+
+Source revision: `0968f9b468bcfa16d08978d4d55655ee068eac2c`.
+Published application manifest:
+`sha256:cb2aa547c9619df62427e68bd6b201d1c464cde028d5cfbef4b2dd89df51ff8c`.
+
+- `just check` and `just gateway-container-test` passed. The latter now uses the same CA loader as
+  the API/worker/migrator and verifies old/new trust overlap and old-anchor retirement with SQL
+  queries against separate local gateway identities.
+- An authenticated AWS drift plan reported no changes; no infrastructure apply was performed.
+- `aws-run sp just container-publish` rebuilt the application with fresh bases and uncached package
+  layers, then published its clean Git revision under an immutable tag in the existing repository.
+- ECR basic scanning reported `COMPLETE`, empty finding counts, completion at
+  `2026-09-13T02:18:56Z`. This is OS-package scan evidence, not application/dependency/code assurance.
+- All three packaged entry points exited 1 with required CA absent under a read-only, dropped-
+  capability, network-disabled container smoke. API and worker reported the trust-configuration
+  error explicitly; the migrator deliberately reports a generic failure. This smoke is rejection
+  evidence, not a successful packaged connection or migration.
+
+Confidence is high for these observed local/configuration/scan results. Actual ECS-to-Railway TLS,
+real secret versions/roles, operator expiry alerts and deployment rotation remain unverified.
+The separate PgBouncer image is not covered by this application-image scan. No image digest was
+activated in task configuration, and no compute or shared-database mutation occurred in this step.
+
 ## Repeating checks and remaining gates
 
 Use `just infrastructure-plan` through the approved AWS wrapper for drift checks. Review live

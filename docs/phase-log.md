@@ -298,3 +298,8 @@ Secret/database/migration checks and live service verification still precede act
   unregistered. No infrastructure apply was needed.
 - Production roles, certificates, secrets, expiry alerts and live activation remain pending. See the
   [database TLS contract](database-tls-contract.md) for the rollout sequence and compatibility delta.
+- Published application revision `0968f9b` through the existing clean-revision workflow. ECR basic
+  scanning completed with empty finding counts on 2026-09-13. Missing-CA packaged startup checks
+  exited 1 for all three binaries; these do not prove successful packaged database connectivity.
+  The [verification record](deployment-verification.md) includes the exact digest and scope.
+  The PgBouncer image, real database setup and runtime activation are still separate gates.
