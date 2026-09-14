@@ -13,7 +13,8 @@ project-token pathway. Do not request broader credentials just to use that provi
 Railway CLI supports project-scoped authentication and native plan/apply with named partials.
 
 The installed CLI 4.11 failed its scale command against a removed `Region.railwayMetal` field.
-Use the project-local official CLI 5.49.6, not the system installation. `just gateway-tool-install`
+Use the project-local official CLI 5.49.6 for native IaC; the scoped SSH exception is below.
+`just gateway-tool-install`
 verifies the Linux/x86_64 musl archive against the SHA-256 published with that GitHub release before
 extracting the executable. Node's SDK is pinned to Railway 3.11.0 with a pnpm integrity lockfile;
 it is deployment-only, not an application dependency. Existing TypeScript/format/lint tools are reused.
@@ -47,9 +48,9 @@ Use cryptographic randomness for credentials, not the SDK's deterministic `conte
 
 ## Closed preparation state
 
-The initial definition reserves one empty service and a TCP proxy to port 6432. It has **no source
-image or Git deployment**, variables, volumes, HTTP domain, or database connection. There is no
-running gateway yet. Its eventual resource limits are 0.25 CPU / 128 MiB and one steady-state
+The definition reserves one empty service and a TCP proxy to port 6432. It has **no source image
+or Git deployment**, volumes, HTTP domain, or database connection. Six externally supplied variable
+values are now preserved, with private values sealed. There is no running gateway yet. Its eventual resource limits are 0.25 CPU / 128 MiB and one steady-state
 replica, with three failure restarts, no configured rollout overlap, and 15 seconds of draining.
 No overlap trades availability during rollout for cost bounds; connection loss must be tested.
 These limits are not measured sizing or a hard spending cap.

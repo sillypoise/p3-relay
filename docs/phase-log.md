@@ -338,6 +338,9 @@ Secret/database/migration checks and live service verification still precede act
   database CREATE. Changed it to skip CREATE when the schema exists instead of broadening the
   migrator's authority. Tests cover fresh local installation, restricted existing-schema migration,
   missing-schema rejection, duplicate bootstrap, denied administration and unsafe PUBLIC grants.
-- `just check` and race-enabled `just gateway-container-test` passed. A new application image is
-  required for the migration fix. Native drift still repeats three sealed-metadata changes and
-  two source/default updates; no gateway deployment or public application exists yet.
+- `just check` and race-enabled `just gateway-container-test` passed. Published the replacement
+  application image from `8164bc2`; ECR basic scan counts were empty. Its packaged migrator completed
+  initial/repeated local migration as the restricted owner and rejected NOLOGIN runtime access.
+  The network-isolated Unix-socket check is not production password/TLS or ECS evidence.
+- Native drift still repeats three sealed-metadata changes and two source/default updates; no
+  gateway deployment or public application exists yet.

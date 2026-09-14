@@ -196,13 +196,31 @@ application activation. See the scoped compatibility notes in `.railway/README.m
 The local restricted-owner migration preflight initially failed: `CREATE SCHEMA IF NOT EXISTS`
 still demanded database-wide CREATE. The migration now checks schema existence before issuing
 CREATE, preserving fresh administrator installs without expanding production authority. Tests cover
-both supported paths and missing-schema rejection. **The application image must be rebuilt and
-scanned before production migration**; `0968f9b` still contains the incompatible statement.
+both supported paths and missing-schema rejection. `0968f9b` still contains the incompatible
+statement; use the replacement release below for production migration.
 
 Native drift remains unresolved: three sealed-variable metadata updates plus the two prior
 source/default-normalization updates reappear after apply. The gateway still has no deployment.
 Do not repeatedly apply this drift or represent it as clean. No shared listener, neighboring schema
-or existing role permissions were changed.
+or existing role permissions were changed. PostgreSQL's deployment ID still matches the earlier
+snapshot. Integration Hub has a newer successful deployment dated `2026-09-13T22:06:39Z`, predating
+both sealing applies; this is not an unchanged-ID claim against the older snapshot.
+
+### Replacement application release
+
+Published clean revision `8164bc22c806d137686caf5ab885e1630f1d4881` with fresh base/package layers:
+
+`sha256:06059c94f1e63201090641724f0e1e0aae8ab4a98b2c5d38677a876afa562152`
+
+ECR basic scanning completed with empty finding counts at `2026-09-14T02:03:46Z`. The packaged
+`/usr/local/bin/relay-migrate` completed initial and repeated migration under the restricted schema
+owner against a disposable local PostgreSQL instance, leaving version 2. A NOLOGIN runtime role was
+rejected with exit 1. An initial smoke invocation used the wrong executable path; it was corrected
+before these checks. All fixture containers/volumes were removed.
+
+The packaged check used a network-isolated Unix socket, local trust authentication, read-only image
+filesystem and dropped capabilities. It is packaged SQL/privilege evidence, not real password/TLS,
+Railway migration or ECS evidence. `just check` and race-enabled gateway/container tests passed.
 
 ## Repeating checks and remaining gates
 
