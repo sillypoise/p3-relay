@@ -91,7 +91,10 @@ until real identities/grants and effective deployment settings are verified.
 CLI 5.49.6 project status/API calls succeed, but its native SSH path attempts user-key setup and is
 rejected with project-scoped authentication. Do not request an account token to satisfy that tooling
 path. Narrow compatibility exception: the existing CLI 4.11.0 was verified for read-only SSH commands
-against the exact PostgreSQL service ID `d16e1e40-5489-4891-af9c-643e0a8c7a30`. Keep all native IaC
+against the exact PostgreSQL service ID `d16e1e40-5489-4891-af9c-643e0a8c7a30`. The exception also
+covers the reviewed, credential-free `ops/database-bootstrap.sql` and Relay-scoped SQL privilege
+checks after the read-only preflight. That script creates NOLOGIN roles transactionally and does
+not authorize arbitrary shared-database changes. Keep all native IaC
 commands on the pinned 5.49.6 CLI. Maintainer owns this exception; review each release and by
 2026-12-08, retiring it when project-scoped native SSH is supported.
 
