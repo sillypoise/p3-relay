@@ -1,4 +1,12 @@
-CREATE SCHEMA IF NOT EXISTS p3_relay;
+-- Shared deployments bootstrap schema ownership separately. PostgreSQL still checks database
+-- CREATE authority for CREATE SCHEMA IF NOT EXISTS, even when the schema is already present.
+DO $relay_schema$
+BEGIN
+    IF to_regnamespace('p3_relay') IS NULL THEN
+        CREATE SCHEMA p3_relay;
+    END IF;
+END
+$relay_schema$;
 
 CREATE TABLE p3_relay.schema_migrations (
     version integer PRIMARY KEY,

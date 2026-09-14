@@ -39,16 +39,53 @@ func TestDatabaseBootstrap(t *testing.T) {
 	})
 	bootstrapAbsent(t, name)
 	bootstrapQuery(t, name, bootstrapQueryOptions{statement: script})
-	roles := bootstrapQuery(t, name, bootstrapQueryOptions{statement: "SELECT rolname,rolcanlogin,rolconnlimit FROM pg_roles " +
-		"WHERE rolname IN ('p3_relay_runtime','p3_relay_migrator') ORDER BY rolname;",
+	roles := bootstrapQuery(t, name, bootstrapQueryOptions{
+		statement: "SELECT rolname,rolcanlogin,rolconnlimit FROM pg_roles " +
+			"WHERE rolname IN ('p3_relay_runtime','p3_relay_migrator') ORDER BY rolname;",
 	})
 	if roles != "p3_relay_migrator|f|1\np3_relay_runtime|f|24" {
 		t.Fatal("role admission or connection bounds differ")
 	}
+	bootstrapQuery(t, name, bootstrapQueryOptions{
+		statement: "SET ROLE p3_relay_migrator; BEGIN;" + bootstrapMigrationSQL(t) + "ROLLBACK;",
+	})
 	bootstrapQuery(t, name, bootstrapQueryOptions{statement: script, failure: "already exists"})
-	bootstrapQuery(t, name, bootstrapQueryOptions{statement: "DROP SCHEMA p3_relay; DROP ROLE p3_relay_runtime,p3_relay_migrator;",
+	bootstrapQuery(t, name, bootstrapQueryOptions{
+		statement: "DROP SCHEMA p3_relay; DROP ROLE p3_relay_runtime,p3_relay_migrator;",
 	})
 	bootstrapRejectGrants(t, &bootstrapGrantFixture{container: name, script: script})
+}
+
+// Preserve administrator-led fresh local installs while requiring prior bootstrap for scoped roles.
+func TestMigrationSchemaPermissions(t *testing.T) {
+	name := bootstrapFixture(t)
+	script := bootstrapMigrationSQL(t)
+	bootstrapQuery(t, name, bootstrapQueryOptions{statement: "BEGIN;" + script + "ROLLBACK;"})
+	bootstrapAbsent(t, name)
+	bootstrapQuery(t, name, bootstrapQueryOptions{
+		statement: "CREATE ROLE p3_relay_migrator NOLOGIN;",
+	})
+	bootstrapQuery(t, name, bootstrapQueryOptions{
+		statement: "SET ROLE p3_relay_migrator; BEGIN;" + script,
+		failure:   "permission denied for database",
+	})
+	bootstrapQuery(t, name, bootstrapQueryOptions{statement: "DROP ROLE p3_relay_migrator;"})
+	bootstrapAbsent(t, name)
+}
+
+func bootstrapMigrationSQL(t *testing.T) string {
+	t.Helper()
+	var script strings.Builder
+	paths := [...]string{"../migrations/001_initial.sql", "../migrations/002_sandbox.sql"}
+	for _, path := range paths {
+		content, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal("migration source unavailable", err)
+		}
+		script.Write(content)
+		script.WriteString("\n")
+	}
+	return script.String()
 }
 
 func bootstrapRejectGrants(t *testing.T, fixture *bootstrapGrantFixture) {
@@ -59,7 +96,8 @@ func bootstrapRejectGrants(t *testing.T, fixture *bootstrapGrantFixture) {
 			cleanup: "DROP SCHEMA neighbor;", failure: "cross-schema CREATE",
 		},
 		{
-			setup:   "CREATE TABLE public.neighbor(id int); GRANT SELECT ON public.neighbor TO PUBLIC;",
+			setup: "CREATE TABLE public.neighbor(id int); " +
+				"GRANT SELECT ON public.neighbor TO PUBLIC;",
 			cleanup: "DROP TABLE public.neighbor;", failure: "cross-schema table",
 		},
 		{
@@ -138,8 +176,9 @@ func bootstrapQuery(t *testing.T, name string, options bootstrapQueryOptions) st
 
 func bootstrapAbsent(t *testing.T, name string) {
 	t.Helper()
-	output := bootstrapQuery(t, name, bootstrapQueryOptions{statement: "SELECT (SELECT count(*) FROM pg_roles WHERE rolname LIKE 'p3_relay_%')," +
-		"(SELECT count(*) FROM pg_namespace WHERE nspname='p3_relay');",
+	output := bootstrapQuery(t, name, bootstrapQueryOptions{
+		statement: "SELECT (SELECT count(*) FROM pg_roles WHERE rolname LIKE 'p3_relay_%')," +
+			"(SELECT count(*) FROM pg_namespace WHERE nspname='p3_relay');",
 	})
 	if output != "0|0" {
 		t.Fatal("rejected bootstrap left persistent roles or schema")

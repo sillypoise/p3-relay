@@ -25,12 +25,22 @@ An interactive PTY is not equivalent to a batch exit contract: the tested `psql 
 remained open after an error despite `ON_ERROR_STOP`. Private SQL must use explicit error detection,
 transaction outcome checks and session completion; exit zero after `\quit` is not SQL success.
 
+## Initial migration compatibility
+
+`001_initial.sql` now creates the schema only when it is absent. This preserves fresh local
+administrator installs while allowing the restricted schema owner to use the existing production
+schema without database-wide CREATE permission. Already-applied migration versions and table
+shapes do not change. First production migration requires a rebuilt/scanned application image;
+the previously published `0968f9b` image still contains the incompatible unconditional statement.
+
 ## Local validation
 
 `just gateway-container-test` includes `TestDatabaseBootstrap`. It runs a network-isolated disposable
 PostgreSQL container without host ports or Railway credentials. Tests cover successful role bounds,
 wrong database, denied administration, duplicate names and rollback for inherited PUBLIC schema,
-table and security-definer access. Rejections check that no roles/schema persist.
+table and security-definer access. Rejections check that no roles/schema persist. Migration tests
+also cover fresh administrator installation, restricted ownership of an existing schema, and
+rejection when a restricted role lacks a pre-created schema.
 
 Run only this test with:
 

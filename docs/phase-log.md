@@ -320,3 +320,24 @@ Secret/database/migration checks and live service verification still precede act
 - Ordinary stdin probes did not establish a safe bootstrap channel. An echo-disabled interactive
   handshake succeeded with non-secret text; private SQL transport and variable sealing still need
   verification before production credentials or roles are created.
+
+### Credential staging and bounded database bootstrap
+
+- Verified non-secret SQL input/error/completion behavior over the compatibility SSH channel.
+  Interactive SQL errors did not terminate `psql`; transaction outcomes must be checked explicitly.
+- Proved native metadata-only sealing with a disposable variable, including withheld readback after
+  update, then removed it. Injected real gateway values outside IaC and sealed the private key and
+  two passwords without including values in the reviewed plan. The source remains empty.
+- Stored separate AWS runtime/migration secret versions and verified private roundtrips. Runtime
+  destination remains empty pending a reviewed receiver. Removed local private staging copies
+  after durable storage verification. Expiry alerts/rotation remain activation gates.
+- Applied the tested credential-free bootstrap: only the Relay schema and two NOLOGIN roles, with
+  24/one connection limits. Live checks rejected runtime DDL, allowed rolled-back migrator DDL,
+  and confirmed no probe tables persisted. No existing role grants or neighboring schemas changed.
+- Caught a real migration permission issue locally: `CREATE SCHEMA IF NOT EXISTS` still requires
+  database CREATE. Changed it to skip CREATE when the schema exists instead of broadening the
+  migrator's authority. Tests cover fresh local installation, restricted existing-schema migration,
+  missing-schema rejection, duplicate bootstrap, denied administration and unsafe PUBLIC grants.
+- `just check` and race-enabled `just gateway-container-test` passed. A new application image is
+  required for the migration fix. Native drift still repeats three sealed-metadata changes and
+  two source/default updates; no gateway deployment or public application exists yet.

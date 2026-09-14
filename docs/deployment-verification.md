@@ -164,6 +164,46 @@ PTY probe confirmed echo-disabled input only after readiness handshakes. Private
 transport and sealed-variable provisioning remain unverified, as do live roles, gateway source and
 application activation. See the scoped compatibility notes in `.railway/README.md`.
 
+## Credential staging and NOLOGIN bootstrap — 2026-09-14
+
+- A non-secret interactive SQL probe verified suppressed input echo, successful reads, deliberate
+  division-by-zero errors and explicit completion. Interactive `psql` remained open after the error;
+  a later zero exit was not treated as SQL success. No real passwords were sent through that probe.
+- A disposable gateway variable proved the SDK's `isSealed` plus `preserveExisting` path. The pinned
+  plan contained metadata only, readback withheld the value, and an update kept it withheld. The
+  probe was removed. This verifies control-plane behavior, not runtime secret injection.
+- Generated independent role/application credentials and a 90-day gateway identity through controlled
+  channels. AWS runtime/migration secret roundtrips matched their private inputs without logging
+  values. Runtime `destination_url` is deliberately empty until a reviewed receiver is available;
+  these versions do not authorize application activation. Local private staging copies were removed
+  after durable storage verification.
+- Injected all six gateway variables without deployment. The private key and two passwords were
+  sealed through the permanent partial; private values/fragments were absent from the reviewed plan,
+  and subsequent readback withheld all three. Public CA material came through authenticated SSH.
+- Gateway certificate expires **2026-12-13T01:24:40Z**; SHA-256 fingerprint:
+  `99:DB:92:74:14:A2:F4:4D:01:72:7C:19:55:4E:1A:78:2B:3B:60:89:61:84:92:11:AB:26:45:05:9C:CE:26:09`.
+  The maintainer must establish expiry alerts and rotation before activation; neither is live yet.
+- Read-only preflight found 11 connections against a configured 100 limit, no existing Relay
+  roles/schema, and no examined unsafe PUBLIC grants. This is a snapshot, not a capacity guarantee.
+- Applied `ops/database-bootstrap.sql`: schema `p3_relay` owned by `p3_relay_migrator`, two NOLOGIN
+  roles with no elevated flags/inheritance and connection limits 24 runtime / one migrator. No
+  application tables exist yet. Local tests cover rejected targets/authority, duplicate names and
+  rollback under unsafe PUBLIC grants; live SQL confirmed the recorded role attributes and owner.
+- Live runtime DDL was rejected with SQLSTATE `42501`. Migrator DDL succeeded inside a rolled-back
+  transaction, and neither probe table persisted. These are administrator `SET ROLE` privilege
+  checks, not password authentication or ECS-to-database evidence.
+
+The local restricted-owner migration preflight initially failed: `CREATE SCHEMA IF NOT EXISTS`
+still demanded database-wide CREATE. The migration now checks schema existence before issuing
+CREATE, preserving fresh administrator installs without expanding production authority. Tests cover
+both supported paths and missing-schema rejection. **The application image must be rebuilt and
+scanned before production migration**; `0968f9b` still contains the incompatible statement.
+
+Native drift remains unresolved: three sealed-variable metadata updates plus the two prior
+source/default-normalization updates reappear after apply. The gateway still has no deployment.
+Do not repeatedly apply this drift or represent it as clean. No shared listener, neighboring schema
+or existing role permissions were changed.
+
 ## Repeating checks and remaining gates
 
 Use `just infrastructure-plan` through the approved AWS wrapper for drift checks. Review live
@@ -173,6 +213,7 @@ secret values or state bodies into logs for these checks. Repeat `just container
 `just check` for code changes.
 
 Still pending: Express service activation,
-verified database TLS and scoped database roles, secret population, migrations, generated HTTPS
-origin, budget notification delivery, full cost review, measured capacity, real task-role behavior,
+verified database TLS/password activation and runtime table grants, receiver configuration,
+migrations, generated HTTPS origin, budget notification delivery, full cost review, measured
+capacity, real task-role behavior,
 actual SQS redrive, and live delivery/retry/recovery. No public demo is running yet.

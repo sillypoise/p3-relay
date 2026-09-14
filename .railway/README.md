@@ -98,12 +98,21 @@ not authorize arbitrary shared-database changes. Keep all native IaC
 commands on the pinned 5.49.6 CLI. Maintainer owns this exception; review each release and by
 2026-12-08, retiring it when project-scoped native SSH is supported.
 
-Ordinary piped/command-mode stdin was not verified with the legacy transport. An interactive,
-echo-disabled PTY probe succeeded only with explicit readiness handshakes; it used non-secret test
-text. This is not yet verification of a private SQL/bootstrap channel. No credentials were sent,
-and no production role/schema changes were made. Secret provisioning must still avoid arguments,
-echo, command logs and shared-service redeployments. Public API variable-upsert introspection did not
-expose a sealing option; do not assume the CLI can seal variables merely because it can list them.
+Ordinary piped/command-mode stdin was not verified with the legacy transport. An echo-disabled
+interactive probe verified SQL reads, deliberate errors and explicit completion with non-secret
+text. Interactive `psql` did not exit on SQL error; private bootstrap must check transaction outcomes
+rather than trust process exit alone. No real password has been sent over this SQL channel.
+
+The credential-free bootstrap has created the Relay schema and two restricted NOLOGIN roles. Live
+administrator `SET ROLE` checks rejected runtime DDL and allowed migrator DDL only in a rolled-back
+probe. Password activation, migrations and runtime table grants remain pending.
+
+Gateway values were injected through stdin without deployment. Native `isSealed: true` with
+`preserveExisting: true` sealed the private key/passwords without embedding them in source or the
+reviewed plan. A disposable non-secret probe first verified sealing and update/readback behavior;
+its cleanup is complete. All six permanent variable values are externally owned. Runtime secret
+injection remains unverified. Follow-up plans still repeat three sealed-metadata changes as well
+as source/default normalization: do not blindly reapply or claim clean drift.
 
 ## Evidence references
 
