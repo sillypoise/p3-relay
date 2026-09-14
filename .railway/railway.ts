@@ -15,6 +15,10 @@ export default defineRailway((context) => {
     const gateway = service("p3-relay-db-gateway", {
         // Reserve the endpoint without starting an unconfigured image or automatic Git deployment.
         source: empty(),
+        // Temporary non-secret capability probe. Remove after sealing/readback verification.
+        variables: {
+            GATEWAY_SEAL_PROBE: { isSealed: true, preserveExisting: true },
+        },
         replicas: { "us-east4-eqdc4a": 1 },
         tcp: [6432],
         deploy: {

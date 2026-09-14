@@ -23,7 +23,12 @@ test("gateway partial owns one empty service with bounded deployment settings", 
     assert.deepEqual(gateway.source, { type: "empty" });
     assert.deepEqual(gateway.networking?.tcpProxies, { "6432": {} });
     assert.equal(gateway.networking?.serviceDomains, undefined);
-    assert.equal(gateway.variables, undefined);
+    assert.deepEqual(gateway.variables, {
+        GATEWAY_SEAL_PROBE: {
+            type: "raw",
+            value: { isSealed: true, preserveExisting: true },
+        },
+    });
     assert.equal(gateway.volumeMounts, undefined);
     assert.deepEqual(gateway.deploy?.limitOverride, {
         containers: { cpu: 0.25, memoryBytes: 134217728 },
