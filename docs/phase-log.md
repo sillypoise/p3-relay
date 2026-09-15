@@ -358,3 +358,16 @@ Secret/database/migration checks and live service verification still precede act
   checks failed, the retained connection remained usable, and no Relay sessions remained afterward.
 - This is private database evidence, not a live gateway or ECS result. No migration tables, gateway
   deployment or public application exist yet; expiry alerts and runtime lifecycle checks remain.
+
+### Expiry alert channel awaiting confirmation
+
+- Added three fixed Scheduler-to-SNS reminders and an exhausted-delivery alarm without application
+  compute. Reused the private operator mailbox; IAM is scoped to Relay's group/topic.
+- Applied the reviewed ten-addition plan. SNS rejected the initial wildcard topic policy; recovered
+  through a fresh one-addition plan using supported topic actions, without replacing other resources.
+- Verified live dates/targets/retry bounds, TLS denial and alarm configuration. AWS drift is clean;
+  main state now owns 42 resources. Native Railway drift is a separate unresolved condition.
+- The email subscription remains PendingConfirmation. The operator must confirm privately before
+  testing actual delivery. No inbox, scheduled execution or failure-alarm delivery claim is made.
+- `just check` passed. Mock tests isolate private expiry configuration and cover disabled/invalid
+  inputs, date boundaries and scoped delivery. No gateway or public application has been started.

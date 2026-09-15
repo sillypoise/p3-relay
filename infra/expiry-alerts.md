@@ -1,6 +1,7 @@
 # Gateway expiry alerts
 
 Owner: Relay maintainer. Scope: the reviewed gateway CA and the two Relay database passwords.
+Status: applied on 2026-09-15; the subscription is pending confirmation and delivery is unverified.
 The private recipient is the existing `budget_alert_email`; do not print it or confirmation links.
 `gateway_certificate_expires_at` is public metadata, not secret material. Empty disables these
 resources. A nonempty value must be valid UTC RFC3339 and requires the private mailbox.

@@ -1,6 +1,7 @@
 # Relay infrastructure foundations
 
-Status: state bootstrap and 32 main resources applied, including networking and budget alerts.
+Status: state bootstrap and 42 main resources applied, including networking and alert infrastructure.
+The expiry subscription awaits operator confirmation; its delivery path is not yet verified.
 No API/worker service is running.
 See [deployment preparation](../docs/deployment-plan.md) for runtime decisions and cost.
 
@@ -100,8 +101,8 @@ The one-off migration task receives only its separate database URL/CA and has no
 All three containers set `RELAY_DATABASE_CA_REQUIRED=true`. The URL must use `sslmode=verify-full`
 and the gateway alias `p3_relay`; `database_ca` contains its public trust anchor, not a private key.
 See the [database TLS contract](../docs/database-tls-contract.md). Populate the newly required CA
-field before registering these task definitions. Existing secret versions are still empty; this is
-an initial controlled cutover, not a migration of a running deployment.
+field before registering these task definitions. Secret versions are now populated, but the runtime
+destination remains unset. This is an initial controlled cutover, not a running-service migration.
 Execution roles can pull this repository, write this log group, and read their own secret container.
 The runtime task role has only four source-queue actions. Co-located processes share that IAM role;
 this is not process-level IAM isolation. See the [contract delta](../docs/notification-contract.md).
@@ -109,7 +110,8 @@ this is not process-level IAM isolation. See the [contract delta](../docs/notifi
 Runtime database credentials must lack DDL privileges and access to other portfolio schemas.
 Migration credentials must be restricted to Relay's schema operations. Verify database server
 identity and encrypted transport before launching either task; task-definition tests do not verify
-opaque secret contents or PostgreSQL grants. No database roles or migrations have been applied here.
+opaque secret contents or PostgreSQL grants. Restricted roles have been created and activated outside
+IaC through the reviewed administrator channel. Production migrations/table grants remain pending.
 
 ## Image publication
 

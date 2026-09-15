@@ -247,6 +247,35 @@ ECS-to-gateway TLS or the live gateway-to-database hop. The gateway still has no
 expiry alerts, lifecycle/resource checks, migrations and table grants remain release gates. Role
 password expiry does not retroactively terminate existing sessions.
 
+## Expiry alert infrastructure — 2026-09-15
+
+Reviewed a ten-addition, zero-change/deletion plan for three Scheduler-to-SNS reminders, the scoped
+publisher/group, operator topic/email subscription, TLS-only topic policy and an exhausted-delivery
+alarm. No existing budget, gateway or application compute was changed. Main state now owns 42
+resources. The private recipient remained redacted in plan diagnostics.
+
+The first apply created nine resources but AWS rejected `sns:*` in the topic policy as out of service
+scope. Replaced the wildcard with the eight supported topic actions, then refreshed/reviewed a
+missing-policy-only plan (one addition, no changes/deletions). That recovery apply succeeded; a
+subsequent authenticated AWS drift plan reported no changes. Mock checks cannot replace this live
+policy validation; the failure was not treated as successful setup.
+
+Live metadata verified:
+
+- Reminders enabled in UTC at `2026-11-13T01:24:40`, `2026-12-06T01:24:40` and
+  `2026-12-12T01:24:40`, with no flexible window, three retries and a one-hour event-age budget.
+- Target inputs reference only `p3-relay-operator-alerts` and public expiry guidance.
+- The topic denies insecure transport. The dropped-invocation alarm uses `InvocationDroppedCount`,
+  threshold zero and the operator topic as its action. This is configuration, not a tested alarm.
+- One email subscription exists and is **PendingConfirmation**. Inbox receipt, Scheduler execution
+  and failure-alarm delivery remain unverified. Runtime activation stays gated.
+
+`just check` passed, including 31 main/two bootstrap mocked infrastructure tests. Tests explicitly
+clear the local operator expiry input as well as the mailbox; otherwise private configuration would
+activate resources in unrelated mocked cases. The expiry tests cover missing/invalid inputs, exact
+reminder boundaries and delivery/security configuration. See `infra/expiry-alerts.md` for confirmation,
+rotation, failure limits and remaining live checks.
+
 ## Repeating checks and remaining gates
 
 Use `just infrastructure-plan` through the approved AWS wrapper for drift checks. Review live
