@@ -222,6 +222,31 @@ The packaged check used a network-isolated Unix socket, local trust authenticati
 filesystem and dropped capabilities. It is packaged SQL/privilege evidence, not real password/TLS,
 Railway migration or ECS evidence. `just check` and race-enabled gateway/container tests passed.
 
+## Role activation and private TLS — 2026-09-15
+
+- Direct Railway API readback confirmed ON_FAILURE, three retries, sleep=false, overlap=0 and
+  drain=15 seconds. No normalization-only plan was applied. This is configuration evidence, not
+  measured lifecycle behavior; the repeated five-change native plan remains unresolved.
+- An activation rehearsal used non-secret passwords and rolled back. A deliberate SQL error
+  prevented the preparation marker and commit. One standalone read-only reconciliation call timed
+  out; the subsequent activation guard revalidated both NOLOGIN/no-password states in the same
+  transaction before making any credential change. No uncertain mutation was retried.
+- Activated only `p3_relay_runtime` and `p3_relay_migrator` using separately scoped stored credentials.
+  Session-only logging controls and suppressed input/history kept values out of arguments, files and
+  diagnostic output. SCRAM encryption was explicit. Post-commit metadata showed LOGIN, unchanged
+  24/one connection limits, and password validity through `2026-12-13T01:24:40Z` for both roles.
+- Both roles successfully queried over PostgreSQL TLS using `postgres.railway.internal`, its
+  authenticated CA, verify-full and a TLS 1.2 minimum. Actual wrong-password and wrong-hostname
+  attempts were rejected; the prior connection remained usable after rejection.
+- A subsequent activity/schema query found zero Relay sessions and zero Relay tables. All probes
+  used the existing authenticated SSH channel; no shared listener, existing role permissions or
+  neighboring schemas were changed.
+
+Confidence is high for the observed database/configuration results. This does not verify either
+ECS-to-gateway TLS or the live gateway-to-database hop. The gateway still has no deployed source;
+expiry alerts, lifecycle/resource checks, migrations and table grants remain release gates. Role
+password expiry does not retroactively terminate existing sessions.
+
 ## Repeating checks and remaining gates
 
 Use `just infrastructure-plan` through the approved AWS wrapper for drift checks. Review live
@@ -231,7 +256,7 @@ secret values or state bodies into logs for these checks. Repeat `just container
 `just check` for code changes.
 
 Still pending: Express service activation,
-verified database TLS/password activation and runtime table grants, receiver configuration,
+verified ECS/gateway database TLS and runtime table grants, receiver configuration,
 migrations, generated HTTPS origin, budget notification delivery, full cost review, measured
 capacity, real task-role behavior,
 actual SQS redrive, and live delivery/retry/recovery. No public demo is running yet.

@@ -95,25 +95,35 @@ path. Narrow compatibility exception: the existing CLI 4.11.0 was verified for r
 against the exact PostgreSQL service ID `d16e1e40-5489-4891-af9c-643e0a8c7a30`. The exception also
 covers the reviewed, credential-free `ops/database-bootstrap.sql` and Relay-scoped SQL privilege
 checks after the read-only preflight. That script creates NOLOGIN roles transactionally and does
-not authorize arbitrary shared-database changes. Keep all native IaC
+not authorize arbitrary shared-database changes. The subsequent activation may set passwords and
+LOGIN only for those two existing roles, using separately scoped AWS secrets and an echo-disabled
+SQL channel with session-only log suppression. Verify rollback before activation, detect SQL errors
+explicitly, and reconcile unknown commit outcomes instead of retrying. Passwords must never enter
+arguments, history, source files or diagnostic output. Keep all native IaC
 commands on the pinned 5.49.6 CLI. Maintainer owns this exception; review each release and by
 2026-12-08, retiring it when project-scoped native SSH is supported.
 
 Ordinary piped/command-mode stdin was not verified with the legacy transport. An echo-disabled
 interactive probe verified SQL reads, deliberate errors and explicit completion with non-secret
 text. Interactive `psql` did not exit on SQL error; private bootstrap must check transaction outcomes
-rather than trust process exit alone. No real password has been sent over this SQL channel.
+rather than trust process exit alone. Activation subsequently used this controlled channel after
+rollback/error checks, with private input retained only in the controlled process memory.
 
-The credential-free bootstrap has created the Relay schema and two restricted NOLOGIN roles. Live
-administrator `SET ROLE` checks rejected runtime DDL and allowed migrator DDL only in a rolled-back
-probe. Password activation, migrations and runtime table grants remain pending.
+The credential-free bootstrap created the Relay schema and two restricted NOLOGIN roles. On
+2026-09-15, guarded password activation enabled both with SCRAM credentials expiring at
+2026-12-13T01:24:40Z. Direct private-hostname TLS queries authenticated both roles; wrong password
+and hostname checks failed as expected. Passwords stayed out of process arguments and operation
+diagnostics; SQL logging suppression was scoped to the administrator session.
+Migrations and runtime table grants remain pending. These checks do not prove ECS/gateway connectivity.
 
 Gateway values were injected through stdin without deployment. Native `isSealed: true` with
 `preserveExisting: true` sealed the private key/passwords without embedding them in source or the
 reviewed plan. A disposable non-secret probe first verified sealing and update/readback behavior;
 its cleanup is complete. All six permanent variable values are externally owned. Runtime secret
 injection remains unverified. Follow-up plans still repeat three sealed-metadata changes as well
-as source/default normalization: do not blindly reapply or claim clean drift.
+as source/default normalization: do not blindly reapply or claim clean drift. Direct API readback
+on 2026-09-15 verified ON_FAILURE/three retries, sleep=false, overlap=0 and drain=15 seconds.
+This verifies configured flags, not actual restart/drain behavior.
 
 ## Evidence references
 

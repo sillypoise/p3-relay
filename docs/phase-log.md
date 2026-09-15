@@ -344,3 +344,17 @@ Secret/database/migration checks and live service verification still precede act
   The network-isolated Unix-socket check is not production password/TLS or ECS evidence.
 - Native drift still repeats three sealed-metadata changes and two source/default updates; no
   gateway deployment or public application exists yet.
+
+### Guarded password activation and private database TLS
+
+- Direct API readback verified the intended restart/sleep/overlap/drain flags. The repeated native
+  plan was not applied; actual gateway lifecycle behavior remains unverified.
+- Rehearsed activation with non-secret values, rollback and deliberate SQL failure. A standalone
+  reconciliation call timed out; the activation transaction itself rechecked NOLOGIN/no-password
+  preconditions before changing either role. No uncertain write was retried.
+- Enabled only the two Relay roles with independently stored SCRAM credentials and expiry matching
+  the reviewed certificate. Passwords stayed out of source, arguments and diagnostic output.
+- Both roles authenticated over private-hostname verify-full PostgreSQL TLS. Wrong password/name
+  checks failed, the retained connection remained usable, and no Relay sessions remained afterward.
+- This is private database evidence, not a live gateway or ECS result. No migration tables, gateway
+  deployment or public application exist yet; expiry alerts and runtime lifecycle checks remain.

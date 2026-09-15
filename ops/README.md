@@ -25,6 +25,31 @@ An interactive PTY is not equivalent to a batch exit contract: the tested `psql 
 remained open after an error despite `ON_ERROR_STOP`. Private SQL must use explicit error detection,
 transaction outcome checks and session completion; exit zero after `\quit` is not SQL success.
 
+## Private role activation
+
+The 2026-09-15 activation used the existing project-scoped administrator channel, not a copied
+administrator credential. Runtime/migration passwords came from their separate AWS secret versions.
+The consumer validated exact role/host/port/database/TLS parameters, distinct 64-character lowercase
+hex passwords and the reviewed gateway CA fingerprint before use.
+
+Before changing credentials, the same transaction acquired advisory lock 330052 and required both
+exact role names to remain NOLOGIN, without passwords or elevated/inherited authority. This is not
+an overwrite/rotation routine: a failed precondition requires investigation. Password encryption was
+explicitly SCRAM-SHA-256. Password validity ends at the reviewed certificate expiry,
+2026-12-13T01:24:40Z; existing sessions are not forcibly revoked at that time.
+
+Input echo and history were disabled, and SQL logging suppression was scoped to the administrator
+session only. No private input was written to source, arguments or diagnostics. Successful preparation
+was checked before COMMIT; authoritative post-commit flags were then checked separately. Do not
+retry an uncertain commit or treat interactive process exit as transaction success.
+
+Verification first used non-secret credentials with rollback and deliberate SQL-error rejection.
+After activation, both real roles authenticated using private-hostname verify-full TLS (minimum 1.2).
+Wrong-password and wrong-hostname connection attempts failed; the prior connection remained usable.
+A later activity query found zero Relay sessions. This is private database evidence, not gateway/ECS
+acceptance. Future password rotation must coordinate database, gateway and client credentials and
+drain/restart existing connections; that live rotation procedure remains unverified.
+
 ## Initial migration compatibility
 
 `001_initial.sql` now creates the schema only when it is absent. This preserves fresh local
