@@ -1,6 +1,6 @@
 # Relay infrastructure foundations
 
-Status: state bootstrap and 31 main resources applied, including networking and budget alerts.
+Status: state bootstrap and 32 main resources applied, including networking and budget alerts.
 No API/worker service is running.
 See [deployment preparation](../docs/deployment-plan.md) for runtime decisions and cost.
 
@@ -24,10 +24,18 @@ just infrastructure-validate
 just infrastructure-test
 ```
 
-The 28 tests use mocked providers: they make no AWS calls. They check queue bounds, encryption,
+The infrastructure tests use mocked providers: they make no AWS calls. They check queue bounds, encryption,
 redrive, state protection, IAM scope, and invalid account/image/origin inputs.
 `just check` includes these checks;
 `just install` initializes providers without contacting an AWS state backend.
+
+## Certificate expiry channel
+
+[Expiry alerts](./expiry-alerts.md) use three fixed Scheduler-to-SNS reminders and an exhausted-
+delivery alarm, with no application compute. The optional public expiry timestamp enables the
+channel; the existing private mailbox receives an SNS confirmation request. Confirm and test
+receipt before runtime activation. Missing confirmation or accepted publication is not delivery
+proof. Use the normal reviewed infrastructure recipes; never expose the mailbox or confirmation link.
 
 ## State bootstrap and plan review
 

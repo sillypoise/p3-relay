@@ -8,3 +8,6 @@ sandbox_origin = ""
 deploy_service = false
 # Private operator mailbox goes only in ignored, owner-readable terraform.tfvars.
 budget_alert_email = ""
+# Reviewed public CA/password expiry; empty creates no expiry alert infrastructure.
+# Before first apply, all reminders (30/seven/one day before expiry) must be in the future.
+gateway_certificate_expires_at = ""

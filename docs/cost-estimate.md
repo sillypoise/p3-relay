@@ -35,6 +35,16 @@ IPv4/ALB allocation, and adequate remaining headroom. Recheck rates and measured
 apply, after changing topology, or if the load/retention assumptions change. Limit task scaling to
 one; budget alerts supplement resource limits but cannot guarantee a hard billing ceiling.
 
+## Expiry reminder increment
+
+The proposed expiry channel adds three one-time Scheduler jobs, one SNS email subscription and one
+standard CloudWatch alarm, without application compute, Lambda or a polling process. Allow **$0.25
+per month** of the remaining headroom for this small channel. This is a conservative planning
+allowance, not a measured bill or freshly verified regional quote; actual request/email volume and
+alarm pricing still belong in the full cost review. At the configured three reminders and maximum
+three retries each, up to 12 publish attempts carry less than 12 KiB of public metadata. Notification
+latency and mailbox receipt are not guaranteed by this cost estimate.
+
 ## Reviewer-visible sources
 
 - [Fargate regional catalog][ecs-prices], usage types `USE1-Fargate-vCPU-Hours:perCPU` and
