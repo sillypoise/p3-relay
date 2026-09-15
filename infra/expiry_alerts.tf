@@ -13,6 +13,11 @@ variable "gateway_certificate_expires_at" {
 }
 
 locals {
+  # SNS topic policies reject service-wide wildcards; enumerate supported topic actions.
+  operator_topic_actions = [
+    "SNS:Publish", "SNS:Subscribe", "SNS:GetTopicAttributes", "SNS:SetTopicAttributes",
+    "SNS:DeleteTopic", "SNS:AddPermission", "SNS:RemovePermission", "SNS:ListSubscriptionsByTopic"
+  ]
   expiry_alerts_enabled = var.gateway_certificate_expires_at != ""
   expiry_reminders = local.expiry_alerts_enabled ? {
     thirty_days = "-720h"
@@ -129,7 +134,7 @@ resource "aws_sns_topic_policy" "operator_alerts" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid       = "Owner", Effect = "Allow", Action = "sns:*"
+        Sid       = "Owner", Effect = "Allow", Action = local.operator_topic_actions
         Principal = { AWS = "arn:aws:iam::${var.aws_account_id}:root" }
         Resource  = aws_sns_topic.operator_alerts[0].arn
       },
@@ -143,7 +148,7 @@ resource "aws_sns_topic_policy" "operator_alerts" {
         }
       },
       {
-        Sid       = "DenyInsecureTransport", Effect = "Deny", Action = "sns:*"
+        Sid       = "DenyInsecureTransport", Effect = "Deny", Action = local.operator_topic_actions
         Principal = "*", Resource = aws_sns_topic.operator_alerts[0].arn
         Condition = { Bool = { "aws:SecureTransport" = "false" } }
       }

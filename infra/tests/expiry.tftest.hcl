@@ -71,7 +71,10 @@ run "bounded_expiry_delivery" {
       aws_cloudwatch_metric_alarm.expiry_delivery[0].metric_name == "InvocationDroppedCount" &&
       aws_cloudwatch_metric_alarm.expiry_delivery[0].threshold == 0 &&
       aws_cloudwatch_metric_alarm.expiry_delivery[0].treat_missing_data == "notBreaching" &&
-      jsondecode(aws_sns_topic_policy.operator_alerts[0].policy).Statement[2].Effect == "Deny"
+      jsondecode(aws_sns_topic_policy.operator_alerts[0].policy).Statement[2].Effect == "Deny" &&
+      toset(jsondecode(aws_sns_topic_policy.operator_alerts[0].policy).Statement[2].Action) ==
+      toset(local.operator_topic_actions) &&
+      !contains(local.operator_topic_actions, "sns:*")
     )
     error_message = "Exhausted delivery needs an independent alarm and TLS-only topic access."
   }
