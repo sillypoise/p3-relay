@@ -1,7 +1,8 @@
 # Gateway expiry alerts
 
 Owner: Relay maintainer. Scope: the reviewed gateway CA and the two Relay database passwords.
-Status: applied on 2026-09-15; the subscription is pending confirmation and delivery is unverified.
+Status: applied on 2026-09-15. Subscription confirmation is verified; alert delivery validation
+is in progress. Confirmation alone does not prove notification receipt.
 The private recipient is the existing `budget_alert_email`; do not print it or confirmation links.
 `gateway_certificate_expires_at` is public metadata, not secret material. Empty disables these
 resources. A nonempty value must be valid UTC RFC3339 and requires the private mailbox.
@@ -49,6 +50,23 @@ If confirmation remains pending, stop activation rather than silently accepting 
 path. If delivery fails, investigate the scoped IAM/target/subscription settings; do not broaden
 permissions or send credentials in diagnostics. An SNS/topic outage can also prevent the alarm's
 email, so this channel is not an independent end-to-end availability guarantee.
+
+## One-time delivery validation
+
+After subscription confirmation, `gateway_alert_validation_at` may request a separate one-time job
+in the existing group, using the same restricted publisher role and target topic. Review a future
+UTC timestamp explicitly; do not compute a moving date during every plan. It sends a labeled TEST
+message without modifying the three production reminders. Retry bounds are identical.
+
+Keep the completed job in state as evidence: it cannot recur and has no idle compute allocation.
+Remove it at an explicitly approved infrastructure teardown. Reset its date only for an intentional,
+reviewed revalidation (for example, after identity rotation). Empty disables this optional resource;
+clearing it after creation requires a reviewed destructive plan.
+
+Verify Scheduler invocation and error metrics, then SNS publication/delivery metrics and recipient
+receipt. A controlled `SetAlarmState` test may verify the separate CloudWatch-to-SNS route, labeled
+as synthetic; it does not simulate retry exhaustion or prove the failure metric itself. Inspect the
+alarm's action history and allow metric evaluation to return it to OK.
 
 ## Validation and ownership
 

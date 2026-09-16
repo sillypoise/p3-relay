@@ -259,7 +259,8 @@ infrastructure-validate:
 # Mocked provider tests include invalid inputs and notification security boundaries.
 infrastructure-test:
     # Isolate mocked defaults from private operator configuration; test runs set their own inputs.
-    tofu -chdir=infra test -var=budget_alert_email= -var=gateway_certificate_expires_at=
+    tofu -chdir=infra test -var=budget_alert_email= -var=gateway_certificate_expires_at= \
+        -var=gateway_alert_validation_at=
     # OpenTofu 1.11 can report mocked cleanup errors with a zero exit status.
     test ! -e infra/errored_test.tfstate
     tofu -chdir=infra/bootstrap test

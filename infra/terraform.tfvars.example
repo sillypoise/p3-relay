@@ -11,3 +11,6 @@ budget_alert_email = ""
 # Reviewed public CA/password expiry; empty creates no expiry alert infrastructure.
 # Before first apply, all reminders (30/seven/one day before expiry) must be in the future.
 gateway_certificate_expires_at = ""
+# Optional one-time alert-path check after confirmation; reviewed future UTC timestamp.
+# Completed jobs are retained for evidence; never automatically reset this to the current time.
+gateway_alert_validation_at = ""

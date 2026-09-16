@@ -80,6 +80,43 @@ run "bounded_expiry_delivery" {
   }
 }
 
+run "one_time_validation" {
+  command = apply
+  variables {
+    budget_alert_email             = "alerts@example.invalid"
+    gateway_certificate_expires_at = "2030-12-13T01:24:40Z"
+    gateway_alert_validation_at    = "2030-10-01T12:00:00Z"
+  }
+  assert {
+    condition = (
+      aws_scheduler_schedule.expiry_validation[0].schedule_expression ==
+      "at(2030-10-01T12:00:00)" &&
+      aws_scheduler_schedule.expiry_validation[0].target[0].role_arn ==
+      aws_iam_role.expiry_scheduler[0].arn &&
+      aws_scheduler_schedule.expiry_validation[0].action_after_completion == "NONE" &&
+      aws_scheduler_schedule.expiry_validation[0].target[0].retry_policy[0].
+      maximum_retry_attempts == 3 && length(aws_scheduler_schedule.expiry) == 3
+    )
+    error_message = "Validation must reuse scoped delivery without replacing production reminders."
+  }
+}
+
+run "reject_validation_without_channel" {
+  command = plan
+  variables { gateway_alert_validation_at = "2030-10-01T12:00:00Z" }
+  expect_failures = [var.gateway_alert_validation_at]
+}
+
+run "reject_invalid_validation_time" {
+  command = plan
+  variables {
+    gateway_certificate_expires_at = "2030-12-13T01:24:40Z"
+    gateway_alert_validation_at    = "invalid"
+    budget_alert_email             = "alerts@example.invalid"
+  }
+  expect_failures = [var.gateway_alert_validation_at]
+}
+
 run "reject_absent_mailbox" {
   command = plan
   variables { gateway_certificate_expires_at = "2030-12-13T01:24:40Z" }
