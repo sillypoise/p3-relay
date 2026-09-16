@@ -34,7 +34,7 @@ func launch() error {
 		return err
 	}
 
-	// One launch per container. The private tmpfs directory is owned by the container lifecycle.
+	// Each launch creates private files; deployment replacement owns tmpfs reclamation.
 	directory, err := prepareFiles("/dev/shm", &value)
 	if err != nil {
 		return err

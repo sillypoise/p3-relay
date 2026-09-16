@@ -1,6 +1,7 @@
 # Relay PostgreSQL gateway
 
-Owner: Relay maintainer. Status: locally verified candidate, not deployed to Railway.
+Owner: Relay maintainer. Status: deployed to Railway; initial live TLS/access and lifecycle checks
+passed. Public application activation and full acceptance remain pending.
 This is PgBouncer 1.25.1 with a small Go startup loader, not a custom database protocol implementation.
 It is separate from the API/worker image and has no shared PostgreSQL administrator credential.
 
@@ -35,8 +36,18 @@ No real credentials or private keys belong in this directory or a container buil
 Startup writes five owner-only files into a new private `/dev/shm` directory. Failed preparation
 removes partial files. Successful `exec` replaces Go with PgBouncer and removes all gateway secret
 variables from the process environment. PgBouncer retains access to the private tmpfs files until
-container teardown. The lifecycle requires one launch per container; Podman container restart was
-verified to discard old startup files. Railway's equivalent lifecycle still needs verification.
+deployment teardown. Podman restart discarded old files, but Railway's restart operation retained
+its tmpfs and created a second private directory. A full Railway deployment replacement discarded
+both old directories and started with one new directory; SQL connectivity recovered.
+
+Use full deployment replacement for credential/certificate rotation and routine operator recovery,
+not repeated process restarts. Each launch adds under 64 KiB before filesystem overhead. The observed
+Railway tmpfs has a 64,000,000-byte hard limit charged against the 128 MiB container budget; retained
+files can consume that budget across restarts. Do not assume three configured failure retries bound
+all launches over a deployment's lifetime. Exhaustion rejects startup and cleans its partial writes,
+as tested locally; replace the deployment rather than repeatedly retrying. Retained files stay
+0700-directory/0600-file protected until replacement. No custom stale-file sweeper is introduced.
+This trades bounded storage retention for using the platform's verified isolation/cleanup boundary.
 
 Invalid startup inputs and operating failures exit 1 with fixed, value-free error classifications.
 The listener accepts PostgreSQL TLS 1.2/1.3 only. Backend TLS verifies both its CA and private hostname;

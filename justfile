@@ -260,7 +260,8 @@ infrastructure-validate:
 infrastructure-test:
     # Isolate mocked defaults from private operator configuration; test runs set their own inputs.
     tofu -chdir=infra test -var=budget_alert_email= -var=gateway_certificate_expires_at= \
-        -var=gateway_alert_validation_at=
+        -var=gateway_alert_validation_at= -var=runtime_image_digest= \
+        -var=sandbox_origin= -var=deploy_service=false
     # OpenTofu 1.11 can report mocked cleanup errors with a zero exit status.
     test ! -e infra/errored_test.tfstate
     tofu -chdir=infra/bootstrap test
