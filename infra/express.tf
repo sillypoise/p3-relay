@@ -131,6 +131,10 @@ resource "aws_cloudformation_stack" "runtime" {
     }
   })
   lifecycle {
+    # Import cannot recover OnFailure or set creation timeout. These are immutable after creation.
+    # Keep bounded creation defaults above for future stacks; never replace a live import for them.
+    # Owner: Relay maintainer; review at the next deliberate stack replacement or by 2026-12-08.
+    ignore_changes = [on_failure, timeout_in_minutes]
     precondition {
       condition     = var.budget_alert_email != ""
       error_message = "Configure the budget alert mailbox before enabling the service."
