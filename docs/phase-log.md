@@ -371,3 +371,16 @@ Secret/database/migration checks and live service verification still precede act
   testing actual delivery. No inbox, scheduled execution or failure-alarm delivery claim is made.
 - `just check` passed. Mock tests isolate private expiry configuration and cover disabled/invalid
   inputs, date boundaries and scoped delivery. No gateway or public application has been started.
+
+### Confirmed subscription and provider-side alert delivery
+
+- Verified subscription confirmation, then sent a direct TEST message and added one isolated,
+  one-time validation schedule through a reviewed one-addition plan. Production reminders stayed
+  unchanged; the completed job is retained for evidence until approved teardown.
+- Observed one Scheduler attempt and three SNS publications/deliveries, with no reported target/drop
+  errors or SNS failures in the bounded window. A synthetic alarm-route test recorded successful
+  SNS action and returned to OK; it did not induce real retry exhaustion.
+- IAM simulation allowed the operator topic and denied another topic. AWS drift is clean at 43
+  resources. Fresh gateway/application basic scans again completed with empty finding counts.
+- Operator confirmation of test email receipt remains pending. The gateway and application remain
+  inactive; provider notification metrics alone do not close the inbox-delivery gate.

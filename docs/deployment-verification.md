@@ -276,6 +276,29 @@ activate resources in unrelated mocked cases. The expiry tests cover missing/inv
 reminder boundaries and delivery/security configuration. See `infra/expiry-alerts.md` for confirmation,
 rotation, failure limits and remaining live checks.
 
+## Alert delivery validation — 2026-09-16
+
+Confirmed the SNS subscription through metadata after the operator's confirmation. Sent a labeled
+TEST notification and applied a reviewed one-addition plan for a separate one-time validation job,
+using the existing group/role/topic without moving production reminders. The job at
+`2026-09-16T00:15:07Z` is retained as completed evidence, not rescheduled automatically.
+
+A bounded CloudWatch observation reported one Scheduler invocation attempt, no target-error/drop
+datapoints, three SNS publications/deliveries and zero SNS failures. These cover the direct test,
+scheduled test and synthetic `SetAlarmState` routing check. Alarm action history reported successful
+SNS routing at `2026-09-16T00:11:53Z`; normal evaluation returned it to OK. This tests the alarm's
+publisher route, not actual retry exhaustion. Provider delivery metrics are not inbox confirmation.
+
+Resource-specific IAM simulation allowed the publisher on the operator topic and denied an
+unrelated topic. AWS drift reported no changes; main state has 43 resources, including the retained
+one-time job. No gateway/application compute was started. Operator confirmation of test notification
+receipt remains required to close the alert gate.
+
+Fresh ECR basic scans completed with empty finding counts for the unchanged gateway digest
+`c89b062e…e40b7` at `2026-09-16T00:17:35Z` and application digest `06059c94…62152` at
+`2026-09-16T00:17:36Z`. Full digests are recorded above. These remain OS-package scan results, not
+code assurance. See `infra/expiry-alerts.md` for the scoped live evidence and limitations.
+
 ## Repeating checks and remaining gates
 
 Use `just infrastructure-plan` through the approved AWS wrapper for drift checks. Review live

@@ -1,7 +1,8 @@
 # Relay infrastructure foundations
 
-Status: state bootstrap and 42 main resources applied, including networking and alert infrastructure.
-The expiry subscription awaits operator confirmation; its delivery path is not yet verified.
+Status: state bootstrap and 43 main resources applied, including networking and alert infrastructure.
+The expiry subscription is confirmed. Provider-side delivery tests passed; operator confirmation of
+notification receipt remains pending.
 No API/worker service is running.
 See [deployment preparation](../docs/deployment-plan.md) for runtime decisions and cost.
 

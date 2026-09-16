@@ -1,8 +1,8 @@
 # Gateway expiry alerts
 
 Owner: Relay maintainer. Scope: the reviewed gateway CA and the two Relay database passwords.
-Status: applied on 2026-09-15. Subscription confirmation is verified; alert delivery validation
-is in progress. Confirmation alone does not prove notification receipt.
+Status: applied on 2026-09-15. Subscription confirmation and provider-side delivery checks were
+verified on 2026-09-16; operator confirmation of test notification receipt remains pending.
 The private recipient is the existing `budget_alert_email`; do not print it or confirmation links.
 `gateway_certificate_expires_at` is public metadata, not secret material. Empty disables these
 resources. A nonempty value must be valid UTC RFC3339 and requires the private mailbox.
@@ -67,6 +67,25 @@ Verify Scheduler invocation and error metrics, then SNS publication/delivery met
 receipt. A controlled `SetAlarmState` test may verify the separate CloudWatch-to-SNS route, labeled
 as synthetic; it does not simulate retry exhaustion or prove the failure metric itself. Inspect the
 alarm's action history and allow metric evaluation to return it to OK.
+
+## Live validation checkpoint — 2026-09-16
+
+The isolated validation job was applied through a reviewed one-addition plan and scheduled for
+2026-09-16T00:15:07Z. Production reminder dates were unchanged. In the bounded observation window:
+
+- Scheduler reported one invocation attempt with no target-error/drop datapoints.
+- SNS reported three messages published and three notifications delivered, with zero failures:
+  the direct TEST notification, synthetic alarm-route test and scheduled TEST notification.
+- Alarm action history recorded successful SNS routing at 2026-09-16T00:11:53Z. Normal metric
+  evaluation returned the alarm to OK. The ALARM email's reason explicitly labels the synthetic test;
+  no real reminder failure was induced.
+- IAM simulation allowed the scheduler role to publish to the operator topic and returned
+  `implicitDeny` for an unrelated topic. This is simulation evidence, not a live denied request.
+- The subsequent AWS drift plan reported no changes. Main state includes the retained validation
+  job (43 resources); no gateway or application compute was started.
+
+These observations verify provider-side invocation and notification handling, not inbox visibility.
+Obtain operator receipt confirmation before closing the alert-path activation gate.
 
 ## Validation and ownership
 

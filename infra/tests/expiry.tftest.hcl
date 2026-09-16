@@ -24,6 +24,7 @@ run "disabled_without_identity" {
     condition = (
       length(aws_sns_topic.operator_alerts) == 0 &&
       length(aws_scheduler_schedule.expiry) == 0 &&
+      length(aws_scheduler_schedule.expiry_validation) == 0 &&
       length(aws_cloudwatch_metric_alarm.expiry_delivery) == 0
     )
     error_message = "An unset identity must not create expiry resources."
