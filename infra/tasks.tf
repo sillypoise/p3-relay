@@ -56,8 +56,9 @@ locals {
     user                   = "10001:10001"
     readonlyRootFilesystem = true
     privileged             = false
-    linuxParameters        = { capabilities = { drop = ["ALL"] } }
-    stopTimeout            = 30
+    # ECS returns an explicit empty add list; preserve it to avoid false replacement plans.
+    linuxParameters = { capabilities = { add = [], drop = ["ALL"] } }
+    stopTimeout     = 30
   }
 }
 

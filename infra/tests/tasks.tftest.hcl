@@ -37,7 +37,8 @@ run "bounded_tasks_and_scoped_credentials" {
       for container in jsondecode(aws_ecs_task_definition.runtime[0].container_definitions) :
       container.essential && container.readonlyRootFilesystem &&
       container.user == "10001:10001" && container.privileged == false &&
-      container.linuxParameters.capabilities.drop == ["ALL"] && container.stopTimeout == 30 &&
+      container.linuxParameters.capabilities.drop == ["ALL"] &&
+      length(container.linuxParameters.capabilities.add) == 0 && container.stopTimeout == 30 &&
       container.memory == 256 && container.cpu == 128 &&
       container.logConfiguration.options.mode == "blocking" &&
       endswith(container.image, "@${var.runtime_image_digest}") &&

@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-// Check the complete grant boundary on a disposable database: absent/wrong migration state,
+// Check the grant boundary on a disposable database: absent/wrong migration state,
 // wrong caller, repeated application, permitted DML, and excluded DDL/metadata/destructive work.
 func TestRuntimeGrants(t *testing.T) {
 	name := bootstrapFixture(t)

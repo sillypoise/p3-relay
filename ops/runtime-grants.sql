@@ -9,8 +9,10 @@ BEGIN
     IF current_database() <> 'railway' OR current_user <> 'p3_relay_migrator' THEN
         RAISE EXCEPTION 'Runtime grants require the reviewed database and schema owner';
     END IF;
-    IF (SELECT array_agg(version ORDER BY version) FROM p3_relay.schema_migrations)
-        IS DISTINCT FROM ARRAY[1, 2] THEN
+    -- Two expected versions plus one overflow row suffice to reject unsupported migration state.
+    IF (SELECT array_agg(version ORDER BY version) FROM (
+        SELECT version FROM p3_relay.schema_migrations ORDER BY version LIMIT 3
+    ) AS versions) IS DISTINCT FROM ARRAY[1, 2] THEN
         RAISE EXCEPTION 'Runtime grants require migration versions one and two';
     END IF;
     IF has_schema_privilege('p3_relay_runtime', 'p3_relay', 'CREATE') THEN
