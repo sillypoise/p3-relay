@@ -61,7 +61,9 @@ resource "aws_iam_role_policy" "express_cloudformation" {
         Action = [
           "ecs:CreateExpressGatewayService", "ecs:UpdateExpressGatewayService",
           "ecs:DeleteExpressGatewayService", "ecs:DescribeExpressGatewayService",
-          "ecs:DescribeServices", "ecs:ListServiceDeployments", "ecs:TagResource"
+          "ecs:DescribeServices", "ecs:ListServiceDeployments", "ecs:TagResource",
+          # The live resource handler also authorizes deployment inspection on its parent service.
+          "ecs:DescribeServiceDeployments"
         ]
         Resource = local.express_service_arn
       },

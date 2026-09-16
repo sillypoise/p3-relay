@@ -75,6 +75,10 @@ run "explicit_service_gate" {
       aws_cloudformation_stack.runtime[0].timeout_in_minutes == 30 &&
       jsondecode(aws_iam_role_policy.express_cloudformation.policy).Statement[0].Resource ==
       local.express_service_arn &&
+      contains(jsondecode(aws_iam_role_policy.express_cloudformation.policy).Statement[0].Action,
+      "ecs:DescribeServiceDeployments") &&
+      !contains(jsondecode(aws_iam_role_policy.express_cloudformation.policy).Statement[0].Action,
+      "ecs:*") &&
       jsondecode(aws_iam_role_policy.express_cloudformation.policy).Statement[2].Resource == [
         aws_iam_role.express_infrastructure.arn,
         aws_iam_role.execution["runtime"].arn,
