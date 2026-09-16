@@ -77,6 +77,8 @@ run "explicit_service_gate" {
       local.express_service_arn &&
       contains(jsondecode(aws_iam_role_policy.express_cloudformation.policy).Statement[0].Action,
       "ecs:DescribeServiceDeployments") &&
+      contains(jsondecode(aws_iam_role_policy.express_cloudformation.policy).Statement[0].Action,
+      "ecs:DescribeServiceRevisions") &&
       !contains(jsondecode(aws_iam_role_policy.express_cloudformation.policy).Statement[0].Action,
       "ecs:*") &&
       jsondecode(aws_iam_role_policy.express_cloudformation.policy).Statement[2].Resource == [
