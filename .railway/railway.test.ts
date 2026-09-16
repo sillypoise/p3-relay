@@ -9,7 +9,7 @@ const target = {
 };
 
 // Check ownership and launch boundaries without fetching credentials or contacting Railway.
-test("gateway partial owns one empty service with bounded deployment settings", async () => {
+test("gateway partial owns one pinned image service with bounded deployment settings", async () => {
     const value = await configuration(createRailwayContext(target), project);
     assert.equal(partial, "p3-relay-gateway");
     assert.equal(value.name, "upwork-portfolio");
@@ -19,8 +19,13 @@ test("gateway partial owns one empty service with bounded deployment settings", 
     assert.ok(!Array.isArray(gateway));
     if (gateway.type !== "service") assert.fail("Only a service may be managed here.");
     assert.equal(gateway.name, "p3-relay-db-gateway");
-    assert.equal(gateway.kind, "empty");
-    assert.deepEqual(gateway.source, { type: "empty" });
+    assert.equal(gateway.kind, "docker-image");
+    assert.deepEqual(gateway.source, {
+        type: "image",
+        image:
+            "public.ecr.aws/f3e3j6u2/p3-relay-gateway@" +
+            "sha256:c89b062ef8e8cf026925620ad8ee63c5b096b8fed578c719fef993f9628e40b7",
+    });
     assert.deepEqual(gateway.networking?.tcpProxies, { "6432": {} });
     assert.equal(gateway.networking?.serviceDomains, undefined);
     assert.deepEqual(Object.keys(gateway.variables ?? {}).sort(), [

@@ -1,4 +1,4 @@
-import { defineRailway, empty, preserve, project, service } from "railway/iac";
+import { defineRailway, image, preserve, project, service } from "railway/iac";
 
 // Independent portfolio repositories cannot safely share one environment-wide owner.
 // Never rename this partial after applying it: omission/deletion is scoped by this identity.
@@ -13,8 +13,11 @@ export default defineRailway((context) => {
     }
 
     const gateway = service("p3-relay-db-gateway", {
-        // Reserve the endpoint without starting an unconfigured image or automatic Git deployment.
-        source: empty(),
+        // Scan-matched public manifest; no mutable tag or registry credential is admitted.
+        source: image(
+            "public.ecr.aws/f3e3j6u2/p3-relay-gateway@" +
+                "sha256:c89b062ef8e8cf026925620ad8ee63c5b096b8fed578c719fef993f9628e40b7",
+        ),
         // Values enter through controlled stdin, not source files or pinned plans.
         variables: {
             GATEWAY_HOSTNAME: preserve(),
