@@ -1,7 +1,24 @@
 # Deployment preparation
 
 Owner: Relay repository maintainer.
-Status: Phase 7 in progress. Infrastructure foundations are applied; no public application runs yet.
+Status: Phase 7 in progress. Gateway and ECS migration are live/verified; public service activation
+is next. Current gates below supersede the historical preparation notes further down.
+
+## Current activation review — 2026-09-16
+
+- Gateway TLS/access, migration version 2 and runtime table grants passed live checks.
+- The bounded [signed demo receiver](demo-receiver-contract.md) shares the API, with no new compute.
+  Empty destination disables new operator receipts during generated-HTTPS bootstrap.
+- [Local memory checks](runtime-capacity-check.md) support the initial task size, with medium
+  confidence pending actual ECS/SQS/TLS measurements.
+- Refreshed [cost review](cost-estimate.md): about $40.41/month for the low-traffic envelope before
+  tax; $48.49 with a 20% planning reserve, not a billing cap. Recheck generated resources and usage.
+- Receiver image `a3dd9b79ffe6fcb91d00077acc05d030d7483c88` was published as
+  `sha256:66225c1cdbb00452412271624c7ed286a0952520171a38abe772ae5826cc5030`.
+  ECR scan completed 2026-09-16T02:00:43Z with empty findings; package scanning is not an app audit.
+- First activate with sandbox origin/destination empty; inspect the generated HTTPS endpoint,
+  certificate and public DNS before configuring them. No placeholder destination is permitted.
+  Then replace the task through a reviewed origin/configuration rollout and verify persisted delivery.
 
 ## Confirmed constraints
 
@@ -20,8 +37,9 @@ Use one 0.25-vCPU/512-MiB task with separate API and worker containers sharing t
 frontend from the API. Set both minimum and maximum task counts to one. Avoid RDS, NAT gateways,
 a separate frontend service, and extra steady-state tasks. Measure memory before approving the size.
 
-Confidence: medium for the overall fit; generated HTTPS and custom task definitions are documented,
-but runtime capacity, networking, IAM, database TLS, and the full cost envelope remain unverified.
+Confidence: medium for the overall fit; generated HTTPS and custom task definitions are documented.
+Migration networking/TLS and its execution IAM are verified; runtime IAM, generated resources and
+sustained live capacity still require checks.
 Sharing a task reduces baseline cost but couples restarts, capacity, and the task's IAM permissions.
 PostgreSQL leases recover interrupted work. Rollouts may briefly run an additional task.
 

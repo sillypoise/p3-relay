@@ -1,7 +1,8 @@
 # AWS cost estimate — deployment review input
 
-Owner: repository maintainer. Status: preliminary, not an approved full deployment quote.
-Evidence collected 2026-09-05 from AWS regional price catalogs published 2026-08-31.
+Owner: repository maintainer. Status: reviewed low-traffic initial deployment envelope, not a bill
+or spending cap. Rates refreshed 2026-09-16 from regional catalogs published 2026-09-11 (CloudWatch:
+2026-09-15). Initial provisioning must be checked against the resource assumptions below.
 
 ## Assumptions and calculation
 
@@ -23,12 +24,38 @@ Confidence: high for these catalog rates and arithmetic; medium for sizing and a
 assumptions until the runtime plan and actual deployment are checked. ECS Express Mode has no
 additional service fee. Its underlying resources are charged normally.
 
-The remainder must cover SQS requests, CloudWatch logs/alarms, two Secrets Manager secrets, ECR,
-S3 state, transfer, one-off migrations, rollout overlap, and taxes. Their full estimate remains
-pending. The operator supplied the private notification destination; the $50 monthly account-wide
-budget is deployed, alerting above $35/$45/$50 actual cost and $50 forecast cost. Inbox delivery is
-not verified. Keep a low-traffic target around $45 before taxes, but do not claim a $50 hard cap:
-traffic, retained images, address allocation, and rollout duration can increase the bill.
+### Ancillary envelope and decision
+
+| Item and monthly workload assumption | Allowance |
+| --- | --- |
+| Two Secrets Manager secrets at $0.40 each, plus 1,000 reads at $0.05/10,000 | $0.805 |
+| 500,000 standard SQS requests at $0.40/million, without free-tier credit | $0.20 |
+| 0.5 GB log ingestion at $0.50/GB and 0.12 GB retained at $0.03/GB-month | $0.254 |
+| 1 GB private ECR storage at $0.10/GB-month | $0.10 |
+| State storage/versions and low-volume S3 GET/PUT operations | $0.03 |
+| External/cross-AZ transfer reserve, not a verified transfer quote | $0.30 |
+| Up to 24 extra task/address hours for rollouts and migrations | $0.42 |
+| Existing expiry alarm/channel allowance | $0.25 |
+| Two standard Express/autoscaling alarm metrics at $0.10 each | $0.20 |
+| **Ancillary envelope** | **$2.559** |
+
+The low-traffic scenario assumes **0.25 average LCU**, yielding approximately **$40.41/month** before
+local taxes. A planning reserve of 20% for tax/uncertainty gives **$48.49**, under the $50 target;
+20% is a reserve, not a claim about this account's tax rate. The one-average-LCU stress scenario is
+**$44.79 before tax**, and would exceed $50 with that reserve. These scenarios are not hard caps.
+
+Confidence: high for refreshed catalog rates/arithmetic; medium for the initial usage envelope.
+Admission: proceed with one task and generated HTTPS, then inspect generated resources and usage.
+Re-evaluate if sustained LCU exceeds 0.25, monthly logs exceed 0.5 GB, images exceed 1 GB, rollouts
+exceed 24 task-hours or observed tax/other account charges consume the reserve. The signed synthetic
+receiver shares the API; no extra compute is needed. Do not enable Container Insights, paid
+dashboards, NAT or extra replicas without a new cost review.
+
+Cost Explorer returned an estimated September 1–16 account-wide unblended cost of **$0.1855** on
+2026-09-16. It is delayed month-to-date evidence, not a projection or final invoice. The $50 budget
+alerts above $35/$45/$50 actual and $50 forecast cost. Operator-confirmed SNS tests do not establish
+delivery of a future AWS Budgets email. Public request abuse, address allocation or retained
+resources can invalidate this envelope.
 
 Do not apply the runtime plan until it confirms one steady-state task, no NAT gateway, the intended
 IPv4/ALB allocation, and adequate remaining headroom. Recheck rates and measured memory before
@@ -37,11 +64,11 @@ one; budget alerts supplement resource limits but cannot guarantee a hard billin
 
 ## Expiry reminder increment
 
-The proposed expiry channel adds three one-time Scheduler jobs, one SNS email subscription and one
+The deployed expiry channel adds three one-time reminder jobs, one SNS email subscription and one
 standard CloudWatch alarm, without application compute, Lambda or a polling process. Allow **$0.25
 per month** of the remaining headroom for this small channel. This is a conservative planning
-allowance, not a measured bill or freshly verified regional quote; actual request/email volume and
-alarm pricing still belong in the full cost review. At the configured three reminders and maximum
+allowance, not a measured bill. The standard alarm rate was refreshed at $0.10/month; request/email
+volume remains an assumption in this allowance. At the configured three reminders and maximum
 three retries each, up to 12 publish attempts carry less than 12 KiB of public metadata. Notification
 latency and mailbox receipt are not guaranteed by this cost estimate.
 
@@ -54,14 +81,27 @@ latency and mailbox receipt are not guaranteed by this cost estimate.
 - [VPC regional catalog][vpc-prices], `USE1-PublicIPv4:InUseAddress`.
 - [ECS Express Mode overview][express], generated HTTPS, underlying-resource pricing, availability.
 - [ECS create API][create], custom task definitions and primary-container requirements.
+- Refreshed ancillary catalogs: [Secrets Manager][secrets-prices], [SQS][sqs-prices],
+  [CloudWatch][logs-prices], [ECR][ecr-prices], [S3][state-prices]. Standard S3 rates checked:
+  $0.023/GB-month, $0.005/1,000 PUT and $0.004/10,000 GET.
 - [App Runner notice](https://aws.amazon.com/apprunner/), closed to new customers April 30, 2026.
 
 [ecs-prices]:
-  https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonECS/20260831092155/us-east-1/index.json
+  https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonECS/20260911124425/us-east-1/index.json
 [elb-prices]:
-  https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSELB/20260831092255/us-east-1/index.json
+  https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSELB/20260911124544/us-east-1/index.json
 [vpc-prices]:
-  https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonVPC/20260831092232/us-east-1/index.json
+  https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonVPC/20260911124513/us-east-1/index.json
+[secrets-prices]:
+  https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSSecretsManager/20260911124610/us-east-1/index.json
+[sqs-prices]:
+  https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSQueueService/20260911124607/us-east-1/index.json
+[logs-prices]:
+  https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonCloudWatch/20260915152028/us-east-1/index.json
+[ecr-prices]:
+  https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonECR/20260911124425/us-east-1/index.json
+[state-prices]:
+  https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonS3/20260911124507/us-east-1/index.json
 [express]:
   https://docs.aws.amazon.com/AmazonECS/latest/developerguide/express-service-overview.html
 [create]:
