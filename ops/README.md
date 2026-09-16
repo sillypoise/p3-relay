@@ -50,6 +50,22 @@ A later activity query found zero Relay sessions. This is private database evide
 acceptance. Future password rotation must coordinate database, gateway and client credentials and
 drain/restart existing connections; that live rotation procedure remains unverified.
 
+## Runtime table grants
+
+After the ECS migration reports version 2, run `runtime-grants.sql` through the gateway as
+`p3_relay_migrator`. It validates database, caller, exact migration versions and excluded runtime
+DDL/migration-metadata authority before granting in one bounded transaction:
+
+- Events and sandbox sessions: SELECT, INSERT, UPDATE, DELETE.
+- Delivery attempts: SELECT, INSERT, DELETE (attempt records are not updated).
+- Sandbox budget: SELECT, UPDATE only (the singleton is migration-owned).
+
+No TRUNCATE, REFERENCES, TRIGGER, migration-table access, future-table default privileges or
+cross-schema grants are added. Repeated application preserves these explicit grants. Existing
+unexpected authority is not a repair path; stop and investigate. `TestRuntimeGrants` verifies
+missing/wrong migration state, wrong caller, rollback, repeated application and allowed/denied SQL
+against a disposable local database as part of `just gateway-container-test`.
+
 ## Initial migration compatibility
 
 `001_initial.sql` now creates the schema only when it is absent. This preserves fresh local
