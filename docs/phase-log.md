@@ -384,3 +384,23 @@ Secret/database/migration checks and live service verification still precede act
   resources. Fresh gateway/application basic scans again completed with empty finding counts.
 - Operator confirmation of test email receipt remains pending. The gateway and application remain
   inactive; provider notification metrics alone do not close the inbox-delivery gate.
+
+### Live gateway, ECS migration and runtime grants
+
+- Operator confirmation of all three emails closed the alert gate. Applied the gateway's pinned
+  public image to the existing service only; both roles passed public-hostname TLS queries and
+  backend encryption checks. Invalid credentials, names, databases, plaintext and administrative
+  access were rejected. Neighboring deployment IDs remained unchanged.
+- Verified PID 1 UID/GID 10001, zero effective capabilities, 128 MiB/0.25 CPU limits, private file
+  modes and environment scrubbing. Idle memory is not a capacity claim.
+- Restart testing found retained tmpfs files. Full replacement cleared them and recovered SQL.
+  Kept platform-owned, hard-bounded retention and replacement-only rotation/recovery rather than
+  adding cleanup machinery. Lifetime retention is not inferred from the failure retry count.
+- Registered two task definitions without starting Express. The one-off ECS migration stopped with
+  exit 0 and version 2, providing actual AWS-to-gateway database evidence. Applied narrow runtime
+  table grants and verified allowed reads, excluded operations and cross-schema isolation.
+- Explicitly matched ECS's empty capability add-list to eliminate false task replacement drift,
+  without another apply. AWS state has 45 resources and clean drift. Native gateway metadata/default
+  drift remains and was not reapplied.
+- The gateway is live; the public application is not. Receiver configuration, remaining deployment
+  review, generated HTTPS/origin and live delivery acceptance are the next steps.

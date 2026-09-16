@@ -1,8 +1,8 @@
 # Relay infrastructure foundations
 
-Status: state bootstrap and 43 main resources applied, including networking and alert infrastructure.
-The expiry subscription is confirmed. Provider-side delivery tests passed; operator confirmation of
-notification receipt remains pending.
+Status: state bootstrap and 45 main resources applied, including alerts and both task definitions.
+The operator confirmed all three alert test emails. The migration task completed on ECS with exit 0;
+its scoped runtime grants are applied. The Railway gateway is running under its separate owner.
 No API/worker service is running.
 See [deployment preparation](../docs/deployment-plan.md) for runtime decisions and cost.
 
@@ -112,7 +112,8 @@ Runtime database credentials must lack DDL privileges and access to other portfo
 Migration credentials must be restricted to Relay's schema operations. Verify database server
 identity and encrypted transport before launching either task; task-definition tests do not verify
 opaque secret contents or PostgreSQL grants. Restricted roles have been created and activated outside
-IaC through the reviewed administrator channel. Production migrations/table grants remain pending.
+IaC through the reviewed administrator channel. Migration version 2 completed through the ECS task,
+and the schema owner applied explicit table grants; see `ops/README.md` and the verification record.
 
 ## Image publication
 

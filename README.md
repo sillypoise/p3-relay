@@ -16,10 +16,11 @@ controlled worker simulations, replay, and bounded cleanup. Visitor routes are d
 see the sandbox contract for HTTPS configuration and rollout requirements.
 
 Phase 6 adds optional SQS notifications with PostgreSQL reconciliation for lost or duplicated hints.
-Application integration is tested locally. Phase 7 deployment preparation is in progress: AWS access
-is verified and container packaging is updated. OpenTofu foundations and mocked security tests are
-added, including scoped IAM and digest-gated task definitions. The state bootstrap and infrastructure
-foundations are now applied. The OCI build and smoke checks pass; no public application is running.
+Application integration is tested locally. Phase 7 is in progress: the isolated Railway gateway is
+running, both TLS hops and access restrictions have been checked, and the packaged migration task
+completed on AWS ECS. Relay's schema and narrow runtime table grants are applied. Alert receipt is
+confirmed and task definitions are registered. The public API/worker service is **not running yet**;
+receiver configuration, remaining deployment review and live application acceptance are pending.
 
 ## Documentation
 
@@ -42,7 +43,7 @@ foundations are now applied. The OCI build and smoke checks pass; no public appl
 - Go API and delivery worker
 - React, TypeScript, and TanStack
 - PostgreSQL
-- Optional AWS SQS notifications; ECS deployment remains planned
+- Optional AWS SQS notifications; ECS migration verified, API/worker activation pending
 - OpenTofu for project-owned infrastructure
 - Podman for local OCI container workflows
 
@@ -68,7 +69,7 @@ credentials and must not be reused in deployment.
 
 ## Shared PostgreSQL boundary
 
-Deployment will use a Railway PostgreSQL instance shared by portfolio projects. Every Relay table,
+Deployment uses a Railway PostgreSQL instance shared by portfolio projects. Every Relay table,
 index, sequence, migration, and query must be explicitly scoped to the `p3_relay` schema. Relay must
 not create or modify objects in another project schema or rely on the connection's default
 `search_path`.

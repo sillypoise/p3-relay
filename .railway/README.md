@@ -46,11 +46,11 @@ The recipes unset that inherited shell value and put the pinned CLI first in `PA
 actual executable-version checking. Do not disable the guard or spoof a version value.
 Use cryptographic randomness for credentials, not the SDK's deterministic `context.randomString`.
 
-## Closed preparation state
+## Gateway deployment state
 
-The definition reserves one empty service and a TCP proxy to port 6432. It has **no source image
-or Git deployment**, volumes, HTTP domain, or database connection. Six externally supplied variable
-values are now preserved, with private values sealed. There is no running gateway yet. Its eventual resource limits are 0.25 CPU / 128 MiB and one steady-state
+The definition now pins the reviewed public ECR manifest and retains the TCP proxy to port 6432.
+The gateway is running; there is no Git-triggered deployment, volume or HTTP domain. Six externally
+supplied variable values are preserved, with private values sealed. Its eventual resource limits are 0.25 CPU / 128 MiB and one steady-state
 replica, with three failure restarts, no configured rollout overlap, and 15 seconds of draining.
 No overlap trades availability during rollout for cost bounds; connection loss must be tested.
 These limits are not measured sizing or a hard spending cap.
@@ -86,13 +86,14 @@ The reviewed gateway release is available anonymously at:
 `public.ecr.aws/f3e3j6u2/p3-relay-gateway@sha256:c89b062ef8e8cf026925620ad8ee63c5b096b8fed578c719fef993f9628e40b7`
 
 Its private/public manifest digests match. ECR basic scanning completed with empty finding counts;
-this does not prove application/code security or live gateway behavior. The source remains empty
-until real identities/grants and effective deployment settings are verified.
+this does not prove application/code security. This manifest is now deployed. Live TLS, SQL access,
+resource limits and replacement cleanup were checked separately; see the verification record.
 
 CLI 5.49.6 project status/API calls succeed, but its native SSH path attempts user-key setup and is
 rejected with project-scoped authentication. Do not request an account token to satisfy that tooling
 path. Narrow compatibility exception: the existing CLI 4.11.0 was verified for read-only SSH commands
-against the exact PostgreSQL service ID `d16e1e40-5489-4891-af9c-643e0a8c7a30`. The exception also
+against PostgreSQL service `d16e1e40-5489-4891-af9c-643e0a8c7a30` and for read-only lifecycle
+inspection of gateway service `867d03a3-8ea0-4802-8852-2e4f730fd4a6`. The exception also
 covers the reviewed, credential-free `ops/database-bootstrap.sql` and Relay-scoped SQL privilege
 checks after the read-only preflight. That script creates NOLOGIN roles transactionally and does
 not authorize arbitrary shared-database changes. The subsequent activation may set passwords and
@@ -114,16 +115,20 @@ The credential-free bootstrap created the Relay schema and two restricted NOLOGI
 2026-12-13T01:24:40Z. Direct private-hostname TLS queries authenticated both roles; wrong password
 and hostname checks failed as expected. Passwords stayed out of process arguments and operation
 diagnostics; SQL logging suppression was scoped to the administrator session.
-Migrations and runtime table grants remain pending. These checks do not prove ECS/gateway connectivity.
+The ECS migration subsequently completed through the gateway, and runtime table grants were applied.
+Private-hostname checks alone are not the evidence for that separate ECS result.
 
 Gateway values were injected through stdin without deployment. Native `isSealed: true` with
 `preserveExisting: true` sealed the private key/passwords without embedding them in source or the
 reviewed plan. A disposable non-secret probe first verified sealing and update/readback behavior;
 its cleanup is complete. All six permanent variable values are externally owned. Runtime secret
-injection remains unverified. Follow-up plans still repeat three sealed-metadata changes as well
-as source/default normalization: do not blindly reapply or claim clean drift. Direct API readback
+injection has been verified by successful gateway startup and SQL authentication. Follow-up plans now
+repeat three sealed-metadata changes and one deployment-default update; image source round-trips.
+Do not blindly reapply or claim clean native drift. Direct API readback
 on 2026-09-15 verified ON_FAILURE/three retries, sleep=false, overlap=0 and drain=15 seconds.
-This verifies configured flags, not actual restart/drain behavior.
+This verifies configured flags, not graceful draining. Subsequent live checks found process restart
+retains tmpfs, whereas full deployment replacement clears it. Follow `gateway/README.md` for the
+replacement-only rotation/recovery procedure and retained-file bounds.
 
 ## Evidence references
 

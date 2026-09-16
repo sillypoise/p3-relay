@@ -66,6 +66,21 @@ unexpected authority is not a repair path; stop and investigate. `TestRuntimeGra
 missing/wrong migration state, wrong caller, rollback, repeated application and allowed/denied SQL
 against a disposable local database as part of `just gateway-container-test`.
 
+## First live migration checkpoint
+
+On 2026-09-16, a reviewed two-addition OpenTofu plan registered runtime/migration task definitions
+using the scanned application digest. `deploy_service` stayed false. A controlled one-off ECS
+`run-task` call selected the migration definition, owned public subnet and migration security group,
+Fargate 1.4.0, one task, public IP and a recorded idempotency token. Secret values were neither task
+overrides nor command arguments. Task execution is an imperative operation; its definition, IAM,
+networking and log destination remain under the canonical infrastructure recipes.
+
+Task `a9844a2405934331924d805e51e7c9ba` stopped with exit 0 and logged migration version 2. Runtime
+grants then passed live allowed/denied checks. Future runs must use a reviewed registered revision,
+record their task ARN/token, bound the wait and inspect exit status/logs plus authoritative database
+state. A timed-out waiter does not cancel a task or establish rollback; inspect/stop only the owned
+task if needed and reconcile before retrying. Never start the runtime service as a migration shortcut.
+
 ## Initial migration compatibility
 
 `001_initial.sql` now creates the schema only when it is absent. This preserves fresh local

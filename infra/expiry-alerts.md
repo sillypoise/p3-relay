@@ -2,7 +2,7 @@
 
 Owner: Relay maintainer. Scope: the reviewed gateway CA and the two Relay database passwords.
 Status: applied on 2026-09-15. Subscription confirmation and provider-side delivery checks were
-verified on 2026-09-16; operator confirmation of test notification receipt remains pending.
+verified on 2026-09-16. The operator subsequently confirmed all three test emails arrived.
 The private recipient is the existing `budget_alert_email`; do not print it or confirmation links.
 `gateway_certificate_expires_at` is public metadata, not secret material. Empty disables these
 resources. A nonempty value must be valid UTC RFC3339 and requires the private mailbox.
@@ -84,8 +84,9 @@ The isolated validation job was applied through a reviewed one-addition plan and
 - The subsequent AWS drift plan reported no changes. Main state includes the retained validation
   job (43 resources); no gateway or application compute was started.
 
-These observations verify provider-side invocation and notification handling, not inbox visibility.
-Obtain operator receipt confirmation before closing the alert-path activation gate.
+These observations alone verify provider-side invocation and notification handling, not inbox
+visibility. The operator subsequently confirmed receipt of all three messages, closing this initial
+alert-path activation gate. This does not guarantee future mail delivery.
 
 ## Validation and ownership
 

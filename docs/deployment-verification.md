@@ -299,6 +299,57 @@ Fresh ECR basic scans completed with empty finding counts for the unchanged gate
 `2026-09-16T00:17:36Z`. Full digests are recorded above. These remain OS-package scan results, not
 code assurance. See `infra/expiry-alerts.md` for the scoped live evidence and limitations.
 
+## Live gateway and ECS migration — 2026-09-16
+
+The operator confirmed receipt of the direct TEST, scheduled TEST and synthetic ALARM emails,
+closing the initial alert-path gate. Pinned and applied the reviewed public gateway image through a
+zero-addition/deletion, five-update native plan scoped only to the existing gateway. Initial deployment
+`18d83520-0175-4602-a475-1febdb88d673` succeeded. PostgreSQL and Integration Hub deployment IDs
+remained unchanged across launch and replacement.
+
+Live gateway checks:
+
+- Both roles successfully queried using the public hostname/CA with verify-full and a TLS 1.2
+  minimum. `pg_stat_ssl` confirmed encrypted backend sessions. Wrong password, hostname, database,
+  plaintext, administrator and pooler-admin requests were rejected. Runtime DDL returned `42501`
+  and left no forbidden table. An initial probe used unsupported `PGOPTIONS` startup parameters;
+  removing that probe-only setting allowed the intended client configuration to connect.
+- PID 1 was PgBouncer under UID/GID 10001, with zero effective capabilities. Live cgroup limits
+  were 134217728 bytes and CPU quota 25000/100000. Idle memory samples ranged approximately
+  4.47–5.97 MB, not peak or load/capacity measurements. No claim of Railway read-only rootfs or
+  no-new-privileges hardening is made; SSH inspection executes separately as root.
+- Private directory/file modes were 0700/0600 under UID 10001. Reading process environment as that
+  UID found zero gateway secret variables. A bounded recent log sample contained login audit entries
+  without the checked credentials/private-key marker; this is not an audit of every provider log.
+- Railway `deploymentRestart` retained tmpfs and created a second directory, unlike local Podman.
+  Full deployment replacement removed both old directories and recovered SQL with one new directory.
+  Active replacement: `27167e6c-60ba-4b73-b196-e508d29672bc`. Use replacement for rotations/recovery;
+  no custom sweeper was added. The observed tmpfs is hard-bounded to 64,000,000 bytes, with fail-closed
+  startup exhaustion tested locally. Do not infer a lifetime directory bound from three failure retries.
+
+Registered only the two scanned ECS task definitions through a reviewed two-addition plan; the
+Express service remains disabled. Ran one 256-CPU-unit/512-MiB Fargate task in the owned public
+subnet/security group, with its separate execution secret scope and no task role:
+
+`arn:aws:ecs:us-east-1:397483721549:task/p3-relay/a9844a2405934331924d805e51e7c9ba`
+
+It stopped with exit code **0**. Its CloudWatch log reported `migrations applied version=2` at
+`2026-09-16T01:03:15Z`. This is actual packaged ECS-to-gateway-to-database evidence, including required
+CA loading and migration-secret injection, not merely local TLS or IAM simulation.
+
+Applied `ops/runtime-grants.sql` as the schema owner through the gateway. Live checks verified reads
+of the three empty event/session tables and budget singleton, denied migration metadata, TRUNCATE,
+budget deletion, attempt updates and runtime DDL, and zero cross-schema table authority. Repeated
+application succeeded. Disposable tests also cover missing/wrong migration state, wrong caller and
+failure-state invariants. `just check` and `just gateway-container-test` passed; the final bounded
+migration-state guard was rechecked with `TestRuntimeGrants` and the live grant probe.
+
+A drift check initially proposed task-definition replacement because ECS returned an empty Linux
+capability add-list. Explicitly preserving `add=[]` eliminated that false diff without an apply or
+revision replacement. AWS drift is clean at **45 resources**. Native Railway still reports four
+normalization/metadata updates; no no-op reapply was performed. The public API/worker service is
+not running; receiver configuration, remaining cost/capacity review and application acceptance remain.
+
 ## Repeating checks and remaining gates
 
 Use `just infrastructure-plan` through the approved AWS wrapper for drift checks. Review live
@@ -307,8 +358,6 @@ metadata using S3 `head-object`/`get-public-access-block`, SQS `get-queue-attrib
 secret values or state bodies into logs for these checks. Repeat `just container-build` and
 `just check` for code changes.
 
-Still pending: Express service activation,
-verified ECS/gateway database TLS and runtime table grants, receiver configuration,
-migrations, generated HTTPS origin, budget notification delivery, full cost review, measured
-capacity, real task-role behavior,
-actual SQS redrive, and live delivery/retry/recovery. No public demo is running yet.
+Still pending: receiver configuration, full cost/capacity review, Express service activation,
+generated HTTPS origin, budget notification delivery, runtime task-role behavior, actual SQS redrive,
+live rotation/draining and delivery/retry/recovery. No public demo is running yet.

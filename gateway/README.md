@@ -128,8 +128,12 @@ activate the gateway; public tags must not be used as deployment references.
 
 The [verification record](../docs/deployment-verification.md) identifies the scanned, publicly
 available gateway manifest. Each future release still requires its own scan and digest checks.
-Remaining activation gates: runtime verification of staged identities/secrets, table grants and
-expiry alerts, live resource/lifecycle checks, effective Railway deployment settings and
-resolution of the [native planner gap](../.railway/README.md). These tests do not prove crash recovery
-of arbitrary in-flight database transactions or public AWS-to-Railway connectivity. Repository-wide
+Live initial checks now cover staged secret injection, frontend/backend TLS, role/database rejection,
+PID 1 running as UID 10001 with zero effective capabilities, configured CPU/memory limits, private
+file modes and replacement cleanup. The ECS migrator completed through this endpoint, runtime table
+grants are applied, and the operator confirmed alert receipt.
+
+Remaining acceptance includes measured capacity, live rotation/draining and application delivery.
+The [native planner gap](../.railway/README.md) remains: do not reapply normalization-only plans.
+Local tests do not prove crash recovery of arbitrary in-flight live database transactions. Repository-wide
 assertion density is unmeasured; these checks do not establish SAF-05 compliance.
