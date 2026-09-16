@@ -40,7 +40,10 @@ different body returns `409 idempotency_conflict`. Relay compares a stored SHA-2
 detect conflict.
 
 A `202` response guarantees durable persistence, not successful destination delivery. Relay must not
-acknowledge an event if persistence fails.
+acknowledge an event if persistence fails. During deployment bootstrap, an empty configured destination
+must disable new operator receipts: authenticated requests return `503 receipt_unavailable` without
+persistence, and endpoint inspection reports `enabled:false`. Configured deployments are unchanged;
+see the [controlled receiver and bootstrap cutover](demo-receiver-contract.md).
 
 ## Stable receipt errors
 

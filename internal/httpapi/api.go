@@ -45,9 +45,6 @@ func New(
 	if len(ingress_secret) < 16 {
 		panic("ingress secret must contain at least 16 bytes")
 	}
-	if destination_url == "" {
-		panic("destination URL is required")
-	}
 	if len(operator_token) < 16 {
 		panic("operator token must contain at least 16 bytes")
 	}
@@ -89,6 +86,11 @@ func (api *API) events_post(response http.ResponseWriter, request *http.Request)
 	external_id := request.Header.Get("X-Relay-Event-Id")
 	if !valid_event_id(external_id) {
 		write_error(response, http.StatusBadRequest, "invalid_request", "Event identifier is invalid.")
+		return
+	}
+	if api.destination_url == "" {
+		write_error(response, http.StatusServiceUnavailable,
+			"receipt_unavailable", "Event receipt is unavailable.")
 		return
 	}
 	api.accept(response, request, external_id, body)
@@ -176,7 +178,7 @@ func (api *API) endpoint_get(response http.ResponseWriter, request *http.Request
 	}
 	write_json(response, http.StatusOK, map[string]any{
 		"source_key": api.source_key, "destination_url": api.destination_url,
-		"enabled": true, "secrets": "write_only",
+		"enabled": api.destination_url != "", "secrets": "write_only",
 	})
 }
 

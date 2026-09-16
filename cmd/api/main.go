@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/sillypoise/p3-relay/internal/demoreceiver"
 	"github.com/sillypoise/p3-relay/internal/httpapi"
 	"github.com/sillypoise/p3-relay/internal/notification"
 	"github.com/sillypoise/p3-relay/internal/postgres"
@@ -90,6 +91,14 @@ func main_routes(value *configuration, pool *pgxpool.Pool, queue *notification.Q
 		value.destination_url, []byte(value.operator_token))
 	routes := http.NewServeMux()
 	routes.Handle("/v1/", eventAPI.Handler())
+	if secret := os.Getenv("RELAY_DEMO_RECEIVER_SECRET"); secret != "" {
+		receiver, err := demoreceiver.New([]byte(secret))
+		if err != nil {
+			slog.Error("invalid demo receiver configuration")
+			os.Exit(1)
+		}
+		routes.Handle("/v1/demo-receiver", receiver)
+	}
 	if origin := os.Getenv("RELAY_SANDBOX_ORIGIN"); origin != "" {
 		key, err := hex.DecodeString(os.Getenv("RELAY_SANDBOX_KEY"))
 		visitor := &sandbox.Handler{Store: &sandbox.Store{Pool: pool, Notifications: store.Notifications},
@@ -132,8 +141,8 @@ func load_configuration() configuration {
 		slog.Error("RELAY_DATABASE_URL and RELAY_SOURCE_KEY are required")
 		os.Exit(1)
 	}
-	if len(value.ingress_secret) < 16 || value.destination_url == "" {
-		slog.Error("RELAY_INGRESS_SECRET and RELAY_DESTINATION_URL are required")
+	if len(value.ingress_secret) < 16 {
+		slog.Error("RELAY_INGRESS_SECRET must contain at least 16 bytes")
 		os.Exit(1)
 	}
 	if len(value.operator_token) < 16 {

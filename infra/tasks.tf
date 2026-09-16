@@ -38,13 +38,14 @@ locals {
     { name = "GOMEMLIMIT", value = "160MiB" }
   ]
   api_secret_fields = {
-    RELAY_DATABASE_CA     = "database_ca"
-    RELAY_DATABASE_URL    = "database_url"
-    RELAY_SOURCE_KEY      = "source_key"
-    RELAY_INGRESS_SECRET  = "ingress_secret"
-    RELAY_OPERATOR_TOKEN  = "operator_token"
-    RELAY_DESTINATION_URL = "destination_url"
-    RELAY_SANDBOX_KEY     = "sandbox_key"
+    RELAY_DATABASE_CA          = "database_ca"
+    RELAY_DATABASE_URL         = "database_url"
+    RELAY_SOURCE_KEY           = "source_key"
+    RELAY_INGRESS_SECRET       = "ingress_secret"
+    RELAY_OPERATOR_TOKEN       = "operator_token"
+    RELAY_DESTINATION_URL      = "destination_url"
+    RELAY_SANDBOX_KEY          = "sandbox_key"
+    RELAY_DEMO_RECEIVER_SECRET = "delivery_secret"
   }
   worker_secret_fields = {
     RELAY_DATABASE_CA     = "database_ca"

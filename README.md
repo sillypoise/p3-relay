@@ -26,6 +26,7 @@ receiver configuration, remaining deployment review and live application accepta
 
 - [Product brief](docs/product-brief.md)
 - [Delivery contract](docs/delivery-contract.md)
+- [Controlled demo receiver and bootstrap](docs/demo-receiver-contract.md)
 - [Dashboard contract](docs/dashboard-contract.md)
 - [Sandbox contract](docs/sandbox-contract.md)
 - [SQS notification contract](docs/notification-contract.md)
