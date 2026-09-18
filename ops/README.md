@@ -66,6 +66,21 @@ unexpected authority is not a repair path; stop and investigate. `TestRuntimeGra
 missing/wrong migration state, wrong caller, rollback, repeated application and allowed/denied SQL
 against a disposable local database as part of `just gateway-container-test`.
 
+## Runtime revision retention and rollout probes
+
+Owner: Relay maintainer. Runtime task definitions use `skip_destroy=true`: retiring a definition
+before Express completes rollback can leave CloudFormation unable to restore its previous revision.
+This retains definition metadata, not running compute. After successful rollout and bake completion,
+retain current and previous known-good ACTIVE runtime revisions. Before another rollout, review and
+explicitly deregister older unused revisions if necessary; never deregister a revision referenced by
+running tasks, an unfinished deployment or its rollback target. Stop additional rollouts if that
+cleanup/reconciliation cannot be established. Include retained definitions in reviewed teardown.
+
+Express's managed rollback alarm includes expected application 4xx/5xx responses. Do not run negative
+or synthetic-failure probes during deployment or its bake window, and do not disable the alarm to
+make tests pass. Verify the alarm has naturally recovered before starting a rollout. Test failure
+paths after stability and allow their metric window to clear before another deployment.
+
 ## First live migration checkpoint
 
 On 2026-09-16, a reviewed two-addition OpenTofu plan registered runtime/migration task definitions

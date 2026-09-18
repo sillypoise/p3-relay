@@ -65,9 +65,11 @@ locals {
 
 # Registration alone starts no compute. Express Mode service creation remains a separate gate.
 resource "aws_ecs_task_definition" "runtime" {
-  count                    = var.runtime_image_digest == "" ? 0 : 1
-  family                   = "p3-relay-runtime"
-  skip_destroy             = false
+  count  = var.runtime_image_digest == "" ? 0 : 1
+  family = "p3-relay-runtime"
+  # ECS/CloudFormation may need the previous revision throughout rollback and bake time.
+  # Retention owner and the two-revision cleanup gate are documented in ops/README.md.
+  skip_destroy             = true
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
   cpu                      = "256"

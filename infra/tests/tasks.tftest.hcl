@@ -25,6 +25,7 @@ run "bounded_tasks_and_scoped_credentials" {
   }
   assert {
     condition = (
+      aws_ecs_task_definition.runtime[0].skip_destroy &&
       aws_ecs_task_definition.runtime[0].cpu == "256" &&
       aws_ecs_task_definition.runtime[0].memory == "512" &&
       aws_ecs_task_definition.runtime[0].network_mode == "awsvpc" &&
