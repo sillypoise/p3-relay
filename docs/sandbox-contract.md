@@ -1,7 +1,8 @@
 # Public sandbox contract
 
 Owner: Relay repository maintainer.
-Status: Implemented Phase 5 contract; disabled until deployment configuration is supplied.
+Status: Implemented and enabled on the public deployment; initial live isolation checks passed.
+See [live evidence and limitations](live-deployment.md).
 Compatibility: Additive to operator APIs. Visitor credentials never authorize operator routes.
 
 ## Identity and authorization

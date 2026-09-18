@@ -1,6 +1,6 @@
 # Controlled HTTPS demo receiver
 
-Owner: Relay maintainer. Status: implemented, local TLS tests passed; live deployment pending.
+Owner: Relay maintainer. Status: deployed; local TLS and initial live signed delivery/retry/replay checks passed.
 Version: initial additive demo route. Existing configured receipt/delivery behavior is unchanged.
 
 ## Boundary and purpose

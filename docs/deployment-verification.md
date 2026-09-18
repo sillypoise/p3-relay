@@ -358,6 +358,7 @@ metadata using S3 `head-object`/`get-public-access-block`, SQS `get-queue-attrib
 secret values or state bodies into logs for these checks. Repeat `just container-build` and
 `just check` for code changes.
 
-Still pending: receiver configuration, full cost/capacity review, Express service activation,
-generated HTTPS origin, budget notification delivery, runtime task-role behavior, actual SQS redrive,
-live rotation/draining and delivery/retry/recovery. No public demo is running yet.
+The subsequent [live deployment checkpoint](live-deployment.md) records Express activation, receiver
+configuration and successful initial signed delivery, retry, replay and visitor-isolation checks.
+Remaining work includes live browser evidence, sustained capacity, actual SQS redrive/loss recovery,
+rotation/draining and budget-email delivery. Do not confuse initial acceptance with these broader checks.

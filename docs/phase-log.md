@@ -404,3 +404,20 @@ Secret/database/migration checks and live service verification still precede act
   drift remains and was not reapplied.
 - The gateway is live; the public application is not. Receiver configuration, remaining deployment
   review, generated HTTPS/origin and live delivery acceptance are the next steps.
+
+### Public runtime and initial live acceptance
+
+- Added a bounded signature-verifying synthetic receiver to the API rather than a new service.
+  Empty destination now fails closed for new operator receipts during HTTPS bootstrap.
+- Reviewed local maximum-payload memory and refreshed the low-traffic AWS cost envelope; published
+  and scanned the receiver image. Live resource checks confirmed one small task, one ALB and no NAT.
+- Recovered Express creation/ownership after parent-service IAM omissions and an orphaned running
+  service. Imported it without service deletion; recorded the immutable creation-metadata exception.
+- Reconciled an interrupted origin rollout, probe-induced alarm evidence, failed CloudFormation
+  rollback and stale state bindings. Preserved runtime rollback revisions instead of deregistering
+  them prematurely. The fresh rollout completed with the managed alarm still enabled.
+- Public HTTPS now serves the application. Real signed operator delivery produced persisted
+  503/503/204 retries, terminal failure, idempotency/conflict and replay history. Two visitor sessions
+  verified isolation, secure cookies, origin/input rejection and explicitly simulated delivery.
+- `just check` passed and AWS planning reports no changes. Remaining browser, sustained capacity,
+  rotation and broader recovery evidence is listed in [the live checkpoint](live-deployment.md).

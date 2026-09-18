@@ -1,9 +1,10 @@
 # Relay infrastructure foundations
 
-Status: state bootstrap and 45 main resources applied, including alerts and both task definitions.
+Status: state bootstrap and 46 main resources applied, including alerts, task definitions and Express.
 The operator confirmed all three alert test emails. The migration task completed on ECS with exit 0;
 its scoped runtime grants are applied. The Railway gateway is running under its separate owner.
-No API/worker service is running.
+The API/worker service is now running under the imported Express stack (46 main resources).
+See `docs/live-deployment.md` for recovery details and the immutable creation-metadata exception.
 See [deployment preparation](../docs/deployment-plan.md) for runtime decisions and cost.
 
 ## Ownership and boundaries

@@ -19,8 +19,11 @@ Phase 6 adds optional SQS notifications with PostgreSQL reconciliation for lost 
 Application integration is tested locally. Phase 7 is in progress: the isolated Railway gateway is
 running, both TLS hops and access restrictions have been checked, and the packaged migration task
 completed on AWS ECS. Relay's schema and narrow runtime table grants are applied. Alert receipt is
-confirmed and task definitions are registered. The public API/worker service is **not running yet**;
-receiver configuration, remaining deployment review and live application acceptance are pending.
+confirmed and task definitions are registered. The public API/worker service is now running at
+[Relay](https://p3-aa9ae9b0d2e745dc832970fc5b60883c.ecs.us-east-1.on.aws).
+Live signed HTTPS delivery, retries, replay and visitor isolation passed initial checks. Visitor
+receiver outcomes are explicitly simulated. See the [live checkpoint](docs/live-deployment.md) for
+evidence, recovery history and remaining acceptance work.
 
 ## Documentation
 
@@ -44,7 +47,7 @@ receiver configuration, remaining deployment review and live application accepta
 - Go API and delivery worker
 - React, TypeScript, and TanStack
 - PostgreSQL
-- Optional AWS SQS notifications; ECS migration verified, API/worker activation pending
+- Optional AWS SQS notifications; ECS API/worker and migration deployed
 - OpenTofu for project-owned infrastructure
 - Podman for local OCI container workflows
 

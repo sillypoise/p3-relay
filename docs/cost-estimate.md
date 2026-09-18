@@ -37,12 +37,17 @@ additional service fee. Its underlying resources are charged normally.
 | Up to 24 extra task/address hours for rollouts and migrations | $0.42 |
 | Existing expiry alarm/channel allowance | $0.25 |
 | Two standard Express/autoscaling alarm metrics at $0.10 each | $0.20 |
-| **Ancillary envelope** | **$2.559** |
+| Managed rollback alarm: six input metrics at $0.10/metric-month | $0.60 |
+| **Ancillary envelope** | **$3.159** |
 
-The low-traffic scenario assumes **0.25 average LCU**, yielding approximately **$40.41/month** before
-local taxes. A planning reserve of 20% for tax/uncertainty gives **$48.49**, under the $50 target;
+The low-traffic scenario assumes **0.25 average LCU**, yielding approximately **$41.01/month** before
+local taxes. A planning reserve of 20% for tax/uncertainty gives **$49.21**, under the $50 target;
 20% is a reserve, not a claim about this account's tax rate. The one-average-LCU stress scenario is
-**$44.79 before tax**, and would exceed $50 with that reserve. These scenarios are not hard caps.
+**$45.39 before tax**, and would exceed $50 with that reserve. These scenarios are not hard caps.
+
+Live inspection confirmed one two-container 0.25-vCPU/512-MiB task, one internet-facing ALB across
+two subnets, a task public IPv4 address and no owned NAT gateway. Express also created a six-input
+rollback alarm, adding $0.60 to the earlier envelope; ALB IPv4 billing remains a modeled assumption.
 
 Confidence: high for refreshed catalog rates/arithmetic; medium for the initial usage envelope.
 Admission: proceed with one task and generated HTTPS, then inspect generated resources and usage.

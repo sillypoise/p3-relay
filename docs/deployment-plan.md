@@ -1,8 +1,9 @@
 # Deployment preparation
 
 Owner: Relay repository maintainer.
-Status: Phase 7 in progress. Gateway and ECS migration are live/verified; public service activation
-is next. Current gates below supersede the historical preparation notes further down.
+Status: Phase 7 live deployment and initial vertical-flow checks passed. See the
+[live checkpoint](live-deployment.md) for the current deployment, recovery history and remaining work.
+The activation review and preparation notes below record the preceding decisions.
 
 ## Current activation review — 2026-09-16
 
